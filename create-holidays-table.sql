@@ -1,0 +1,10 @@
+CREATE TABLE IF NOT EXISTS holidays (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  date DATE NOT NULL,
+  description TEXT,
+  status VARCHAR(20) DEFAULT 'active',
+  location_id INT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
