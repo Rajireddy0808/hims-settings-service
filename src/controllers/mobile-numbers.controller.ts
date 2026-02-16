@@ -21,6 +21,7 @@ export class MobileNumbersController {
     @Query('fromDate') fromDate?: string,
     @Query('toDate') toDate?: string
   ) {
+    console.log('my-next-call-date endpoint called');
     const userId = req.user?.user_id || req.user?.id || req.user?.sub;
     return this.mobileNumbersService.getMyNextCallDateNumbers(userId, page, limit, locationId, fromDate, toDate);
   }
