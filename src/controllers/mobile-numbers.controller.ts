@@ -6,10 +6,17 @@ import { MobileNumbersService } from '../services/mobile-numbers.service';
 
 @ApiTags('Mobile Numbers')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('mobile-numbers')
 export class MobileNumbersController {
   constructor(private readonly mobileNumbersService: MobileNumbersService) {}
+
+  @Get('health-check')
+  @ApiOperation({ summary: 'Health check for mobile numbers controller' })
+  async healthCheck() {
+    return { status: 'ok', message: 'Mobile Numbers Controller DEPLOYED AND WORKING', timestamp: new Date().toISOString(), version: '3.0' };
+  }
+
+  @UseGuards(JwtAuthGuard)
 
   @Get('my-next-call-date')
   @ApiOperation({ summary: 'Get my mobile numbers by next call date' })
@@ -26,6 +33,7 @@ export class MobileNumbersController {
     return this.mobileNumbersService.getMyNextCallDateNumbers(userId, page, limit, locationId, fromDate, toDate);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('next-call-date')
   @ApiOperation({ summary: 'Get mobile numbers by next call date' })
   async getNextCallDateNumbers(
@@ -40,6 +48,7 @@ export class MobileNumbersController {
     return this.mobileNumbersService.getNextCallDateNumbers(userId, page, limit, locationId, fromDate, toDate);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('my-ob-call-history')
   @ApiOperation({ summary: 'Get logged-in user OB call history' })
   async getMyOBCallHistory(
@@ -54,6 +63,7 @@ export class MobileNumbersController {
     return this.mobileNumbersService.getMyOBCallHistory(userId, page, limit, locationId, fromDate, toDate);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('today-calls')
   @ApiOperation({ summary: 'Get today calls for logged-in user' })
   async getTodayCalls(
@@ -66,6 +76,7 @@ export class MobileNumbersController {
     return this.mobileNumbersService.getTodayCallsByUserId(userId, page, limit, locationId);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('my-numbers')
   @ApiOperation({ summary: 'Get mobile numbers for logged-in user' })
   async getMyMobileNumbers(
@@ -81,6 +92,7 @@ export class MobileNumbersController {
     return this.mobileNumbersService.getMobileNumbersByUserId(userId, page, limit, locationId, fromDate, toDate);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('user/:userId')
   @ApiOperation({ summary: 'Get mobile numbers for specific user (mobile app)' })
   async getMobileNumbersByUser(
@@ -95,6 +107,7 @@ export class MobileNumbersController {
     return this.mobileNumbersService.getMobileNumbersByUserId(userId, page, limit, locationId, fromDate, toDate);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get()
   @ApiOperation({ summary: 'Get all mobile numbers' })
   async getAllMobileNumbers(@Request() req) {
@@ -103,6 +116,7 @@ export class MobileNumbersController {
     return this.mobileNumbersService.getAllMobileNumbers(userId);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('bulk-upload')
   @ApiOperation({ summary: 'Bulk upload mobile numbers from Excel' })
   @UseInterceptors(FileInterceptor('file'))
@@ -112,6 +126,7 @@ export class MobileNumbersController {
     return this.mobileNumbersService.bulkUpload(file, userId, locationId);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post()
   @ApiOperation({ summary: 'Add single mobile number' })
   async addMobileNumber(@Body() data: { mobile: string }, @Request() req) {
