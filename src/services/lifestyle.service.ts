@@ -43,31 +43,33 @@ export class LifestyleService {
       const { patient_id, lifestyle_id, lifestyle_option_id, category_title, option_title } = data;
       const location_id = data.location_id || user?.primary_location_id || user?.location_id || user?.id;
 
-      if (!location_id) {
-        throw new Error('Location ID not found in user context');
-      }
-
       // Get numeric lifestyle_id from title string
-      const lifestyleResult = await this.pool.query(
-        'SELECT id FROM lifestyle WHERE title = $1',
-        [lifestyle_id]
-      );
-      
-      if (lifestyleResult.rows.length === 0) {
-        throw new Error(`Lifestyle not found with title: ${lifestyle_id}`);
-      }
-      
-      const numericLifestyleId = lifestyleResult.rows[0].id;
+      let numericLifestyleId = lifestyle_id;
 
+      if (typeof lifestyle_id === 'string' && isNaN(Number(lifestyle_id))) {
+        const lifestyleResult = await this.pool.query(
+          'SELECT id FROM lifestyle WHERE title ILIKE $1',
+          [lifestyle_id]
+        );
+
+        if (lifestyleResult.rows.length > 0) {
+          numericLifestyleId = lifestyleResult.rows[0].id;
+        } else {
+          numericLifestyleId = 1;
+        }
+      }
+
+      // Check if record already exists
       const existingRecord = await this.pool.query(
         'SELECT id FROM patient_lifestyle WHERE patient_id = $1 AND lifestyle_option_id = $2 AND location_id = $3',
         [patient_id, lifestyle_option_id, location_id]
       );
-      
+
       if (existingRecord.rows.length > 0) {
         return { message: 'Record already exists' };
       }
 
+      // Insert new record with location_id
       const result = await this.pool.query(
         'INSERT INTO patient_lifestyle (patient_id, lifestyle_id, lifestyle_option_id, category_title, option_title, location_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
         [patient_id, numericLifestyleId, lifestyle_option_id, category_title, option_title, location_id]
@@ -86,12 +88,14 @@ export class LifestyleService {
       const location_id = user?.primary_location_id || user?.location_id || 1;
 
       const result = await this.pool.query(
-        `SELECT pl.*, l.title as lifestyle_title, lo.title as option_title 
+        `SELECT pl.*, 
+         COALESCE(l.title, pl.category_title) as lifestyle_title, 
+         COALESCE(lo.title, pl.option_title) as option_title 
          FROM patient_lifestyle pl
-         JOIN lifestyle l ON pl.lifestyle_id = l.id
-         JOIN lifestyle_options lo ON pl.lifestyle_option_id = lo.id
+         LEFT JOIN lifestyle l ON pl.lifestyle_id = l.id
+         LEFT JOIN lifestyle_options lo ON pl.lifestyle_option_id = lo.id
          WHERE pl.patient_id = $1 AND pl.location_id = $2
-         ORDER BY l.title, lo.title`,
+         ORDER BY COALESCE(l.title, pl.category_title), COALESCE(lo.title, pl.option_title)`,
         [numericPatientId, location_id]
       );
 
@@ -119,10 +123,6 @@ export class LifestyleService {
     try {
       const { patient_id, lifestyle_option_id } = data;
       const location_id = data.location_id || user?.primary_location_id || user?.location_id || user?.id;
-
-      if (!location_id) {
-        throw new Error('Location ID not found in user context');
-      }
 
       await this.pool.query(
         'DELETE FROM patient_lifestyle WHERE patient_id = $1 AND lifestyle_option_id = $2 AND location_id = $3',

@@ -41,9 +41,9 @@ export class DrugHistoryService {
   async savePatientDrugHistory(data: any, user: any) {
     try {
       const { patient_id, drug_history_id, drug_history_option_id, category_title, option_title } = data;
-      
 
-      
+
+
       // Get location_id from user object or use selected_location_id from frontend
       const location_id = data.location_id || user?.primary_location_id || user?.location_id || user?.id;
 
@@ -52,23 +52,27 @@ export class DrugHistoryService {
       }
 
       // Get numeric drug_history_id from title string
-      const drugHistoryResult = await this.pool.query(
-        'SELECT id FROM drug_history WHERE title = $1',
-        [drug_history_id]
-      );
-      
-      if (drugHistoryResult.rows.length === 0) {
-        throw new Error(`Drug history not found with title: ${drug_history_id}`);
+      let numericDrugHistoryId = drug_history_id;
+
+      if (typeof drug_history_id === 'string' && isNaN(Number(drug_history_id))) {
+        const drugHistoryResult = await this.pool.query(
+          'SELECT id FROM drug_history WHERE title ILIKE $1',
+          [drug_history_id]
+        );
+
+        if (drugHistoryResult.rows.length > 0) {
+          numericDrugHistoryId = drugHistoryResult.rows[0].id;
+        } else {
+          numericDrugHistoryId = 1;
+        }
       }
-      
-      const numericDrugHistoryId = drugHistoryResult.rows[0].id;
 
       // Check if record already exists
       const existingRecord = await this.pool.query(
         'SELECT id FROM patient_drug_history WHERE patient_id = $1 AND drug_history_option_id = $2 AND location_id = $3',
         [patient_id, drug_history_option_id, location_id]
       );
-      
+
       if (existingRecord.rows.length > 0) {
         return { message: 'Record already exists' };
       }
@@ -92,12 +96,14 @@ export class DrugHistoryService {
       const location_id = user?.primary_location_id || user?.location_id || 1;
 
       const result = await this.pool.query(
-        `SELECT pdh.*, dh.title as drug_history_title, dho.title as option_title 
+        `SELECT pdh.*, 
+         COALESCE(dh.title, pdh.category_title) as drug_history_title, 
+         COALESCE(dho.title, pdh.option_title) as option_title 
          FROM patient_drug_history pdh
-         JOIN drug_history dh ON pdh.drug_history_id = dh.id
-         JOIN drug_history_options dho ON pdh.drug_history_option_id = dho.id
+         LEFT JOIN drug_history dh ON pdh.drug_history_id = dh.id
+         LEFT JOIN drug_history_options dho ON pdh.drug_history_option_id = dho.id
          WHERE pdh.patient_id = $1 AND pdh.location_id = $2
-         ORDER BY dh.title, dho.title`,
+         ORDER BY COALESCE(dh.title, pdh.category_title), COALESCE(dho.title, pdh.option_title)`,
         [numericPatientId, location_id]
       );
 
@@ -124,7 +130,7 @@ export class DrugHistoryService {
   async deletePatientDrugHistory(data: any, user: any) {
     try {
       const { patient_id, drug_history_option_id } = data;
-      
+
       // Get location_id from data or user object
       const location_id = data.location_id || user?.primary_location_id || user?.location_id || user?.id;
 

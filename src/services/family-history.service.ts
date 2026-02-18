@@ -43,31 +43,33 @@ export class FamilyHistoryService {
       const { patient_id, family_history_id, family_history_option_id, category_title, option_title } = data;
       const location_id = data.location_id || user?.primary_location_id || user?.location_id || user?.id;
 
-      if (!location_id) {
-        throw new Error('Location ID not found in user context');
+      let numericFamilyHistoryId = family_history_id;
+
+      // If family_history_id is a string title, look it up
+      if (typeof family_history_id === 'string' && isNaN(Number(family_history_id))) {
+        const familyHistoryResult = await this.pool.query(
+          'SELECT id FROM family_history WHERE title ILIKE $1',
+          [family_history_id]
+        );
+
+        if (familyHistoryResult.rows.length > 0) {
+          numericFamilyHistoryId = familyHistoryResult.rows[0].id;
+        } else {
+          numericFamilyHistoryId = 1;
+        }
       }
 
-      // Get numeric family_history_id from title string
-      const familyHistoryResult = await this.pool.query(
-        'SELECT id FROM family_history WHERE title = $1',
-        [family_history_id]
-      );
-      
-      if (familyHistoryResult.rows.length === 0) {
-        throw new Error(`Family history not found with title: ${family_history_id}`);
-      }
-      
-      const numericFamilyHistoryId = familyHistoryResult.rows[0].id;
-
+      // Check if record already exists
       const existingRecord = await this.pool.query(
         'SELECT id FROM patient_family_history WHERE patient_id = $1 AND family_history_option_id = $2 AND location_id = $3',
         [patient_id, family_history_option_id, location_id]
       );
-      
+
       if (existingRecord.rows.length > 0) {
         return { message: 'Record already exists' };
       }
 
+      // Insert new record with location_id
       const result = await this.pool.query(
         'INSERT INTO patient_family_history (patient_id, family_history_id, family_history_option_id, category_title, option_title, location_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
         [patient_id, numericFamilyHistoryId, family_history_option_id, category_title, option_title, location_id]
@@ -86,12 +88,14 @@ export class FamilyHistoryService {
       const location_id = user?.primary_location_id || user?.location_id || 1;
 
       const result = await this.pool.query(
-        `SELECT pfh.*, fh.title as family_history_title, fho.title as option_title 
+        `SELECT pfh.*, 
+         COALESCE(fh.title, pfh.category_title) as family_history_title, 
+         COALESCE(fho.title, pfh.option_title) as option_title 
          FROM patient_family_history pfh
-         JOIN family_history fh ON pfh.family_history_id = fh.id
-         JOIN family_history_options fho ON pfh.family_history_option_id = fho.id
+         LEFT JOIN family_history fh ON pfh.family_history_id = fh.id
+         LEFT JOIN family_history_options fho ON pfh.family_history_option_id = fho.id
          WHERE pfh.patient_id = $1 AND pfh.location_id = $2
-         ORDER BY fh.title, fho.title`,
+         ORDER BY COALESCE(fh.title, pfh.category_title), COALESCE(fho.title, pfh.option_title)`,
         [numericPatientId, location_id]
       );
 
@@ -119,10 +123,6 @@ export class FamilyHistoryService {
     try {
       const { patient_id, family_history_option_id } = data;
       const location_id = data.location_id || user?.primary_location_id || user?.location_id || user?.id;
-
-      if (!location_id) {
-        throw new Error('Location ID not found in user context');
-      }
 
       await this.pool.query(
         'DELETE FROM patient_family_history WHERE patient_id = $1 AND family_history_option_id = $2 AND location_id = $3',

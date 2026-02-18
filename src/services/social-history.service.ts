@@ -41,7 +41,7 @@ export class SocialHistoryService {
   async savePatientSocialHistory(data: any, user: any) {
     try {
       const { patient_id, social_history_id, social_history_option_id, category_title, option_title } = data;
-      
+
       const location_id = data.location_id || user?.primary_location_id || user?.location_id || user?.id;
 
       if (!location_id) {
@@ -49,22 +49,26 @@ export class SocialHistoryService {
       }
 
       // Get numeric social_history_id from title string
-      const socialHistoryResult = await this.pool.query(
-        'SELECT id FROM social_history WHERE title = $1',
-        [social_history_id]
-      );
-      
-      if (socialHistoryResult.rows.length === 0) {
-        throw new Error(`Social history not found with title: ${social_history_id}`);
+      let numericSocialHistoryId = social_history_id;
+
+      if (typeof social_history_id === 'string' && isNaN(Number(social_history_id))) {
+        const socialHistoryResult = await this.pool.query(
+          'SELECT id FROM social_history WHERE title ILIKE $1',
+          [social_history_id]
+        );
+
+        if (socialHistoryResult.rows.length > 0) {
+          numericSocialHistoryId = socialHistoryResult.rows[0].id;
+        } else {
+          numericSocialHistoryId = 1;
+        }
       }
-      
-      const numericSocialHistoryId = socialHistoryResult.rows[0].id;
 
       const existingRecord = await this.pool.query(
         'SELECT id FROM patient_social_history WHERE patient_id = $1 AND social_history_option_id = $2 AND location_id = $3',
         [patient_id, social_history_option_id, location_id]
       );
-      
+
       if (existingRecord.rows.length > 0) {
         return { message: 'Record already exists' };
       }
@@ -87,12 +91,14 @@ export class SocialHistoryService {
       const location_id = user?.primary_location_id || user?.location_id || 1;
 
       const result = await this.pool.query(
-        `SELECT psh.*, sh.title as social_history_title, sho.title as option_title 
+        `SELECT psh.*, 
+         COALESCE(sh.title, psh.category_title) as social_history_title, 
+         COALESCE(sho.title, psh.option_title) as option_title 
          FROM patient_social_history psh
-         JOIN social_history sh ON psh.social_history_id = sh.id
-         JOIN social_history_options sho ON psh.social_history_option_id = sho.id
+         LEFT JOIN social_history sh ON psh.social_history_id = sh.id
+         LEFT JOIN social_history_options sho ON psh.social_history_option_id = sho.id
          WHERE psh.patient_id = $1 AND psh.location_id = $2
-         ORDER BY sh.title, sho.title`,
+         ORDER BY COALESCE(sh.title, psh.category_title), COALESCE(sho.title, psh.option_title)`,
         [numericPatientId, location_id]
       );
 
@@ -119,7 +125,7 @@ export class SocialHistoryService {
   async deletePatientSocialHistory(data: any, user: any) {
     try {
       const { patient_id, social_history_option_id } = data;
-      
+
       const location_id = data.location_id || user?.primary_location_id || user?.location_id || user?.id;
 
       if (!location_id) {

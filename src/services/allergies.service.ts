@@ -41,7 +41,7 @@ export class AllergiesService {
   async savePatientAllergies(data: any, user: any) {
     try {
       const { patient_id, allergies_id, allergies_option_id, category_title, option_title } = data;
-      
+
       const location_id = data.location_id || user?.primary_location_id || user?.location_id || user?.id;
 
       if (!location_id) {
@@ -49,22 +49,26 @@ export class AllergiesService {
       }
 
       // Get numeric allergies_id from title string
-      const allergiesResult = await this.pool.query(
-        'SELECT id FROM allergies WHERE title = $1',
-        [allergies_id]
-      );
-      
-      if (allergiesResult.rows.length === 0) {
-        throw new Error(`Allergies not found with title: ${allergies_id}`);
+      let numericAllergiesId = allergies_id;
+
+      if (typeof allergies_id === 'string' && isNaN(Number(allergies_id))) {
+        const allergiesResult = await this.pool.query(
+          'SELECT id FROM allergies WHERE title ILIKE $1',
+          [allergies_id]
+        );
+
+        if (allergiesResult.rows.length > 0) {
+          numericAllergiesId = allergiesResult.rows[0].id;
+        } else {
+          numericAllergiesId = 1;
+        }
       }
-      
-      const numericAllergiesId = allergiesResult.rows[0].id;
 
       const existingRecord = await this.pool.query(
         'SELECT id FROM patient_allergies WHERE patient_id = $1 AND allergies_option_id = $2 AND location_id = $3',
         [patient_id, allergies_option_id, location_id]
       );
-      
+
       if (existingRecord.rows.length > 0) {
         return { message: 'Record already exists' };
       }
@@ -88,12 +92,14 @@ export class AllergiesService {
       const location_id = user?.primary_location_id || user?.location_id || 1;
 
       const result = await this.pool.query(
-        `SELECT pa.*, a.title as allergies_title, ao.title as option_title 
+        `SELECT pa.*, 
+         COALESCE(a.title, pa.category_title) as allergies_title, 
+         COALESCE(ao.title, pa.option_title) as option_title 
          FROM patient_allergies pa
-         JOIN allergies a ON pa.allergies_id = a.id
-         JOIN allergies_options ao ON pa.allergies_option_id = ao.id
+         LEFT JOIN allergies a ON pa.allergies_id = a.id
+         LEFT JOIN allergies_options ao ON pa.allergies_option_id = ao.id
          WHERE pa.patient_id = $1 AND pa.location_id = $2
-         ORDER BY a.title, ao.title`,
+         ORDER BY COALESCE(a.title, pa.category_title), COALESCE(ao.title, pa.option_title)`,
         [numericPatientId, location_id]
       );
 
@@ -120,7 +126,7 @@ export class AllergiesService {
   async deletePatientAllergies(data: any, user: any) {
     try {
       const { patient_id, allergies_option_id } = data;
-      
+
       const location_id = data.location_id || user?.primary_location_id || user?.location_id || user?.id;
 
       if (!location_id) {

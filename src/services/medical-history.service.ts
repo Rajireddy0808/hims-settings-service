@@ -1221,16 +1221,21 @@ export class MedicalHistoryService {
       const numericPatientId = parseInt(patient_id);
 
       // Get numeric medical_history_id from title string
-      const medicalHistoryResult = await this.pool.query(
-        'SELECT id FROM medical_history WHERE title = $1',
-        [medical_history_id]
-      );
+      let numericMedicalHistoryId = medical_history_id;
 
-      if (medicalHistoryResult.rows.length === 0) {
-        throw new Error(`Medical history not found with title: ${medical_history_id}`);
+      if (typeof medical_history_id === 'string' && isNaN(Number(medical_history_id))) {
+        const medicalHistoryResult = await this.pool.query(
+          'SELECT id FROM medical_history WHERE title ILIKE $1',
+          [medical_history_id]
+        );
+
+        if (medicalHistoryResult.rows.length > 0) {
+          numericMedicalHistoryId = medicalHistoryResult.rows[0].id;
+        } else {
+          // Use fallback
+          numericMedicalHistoryId = 1;
+        }
       }
-
-      const numericMedicalHistoryId = medicalHistoryResult.rows[0].id;
 
       // Get location_id dynamically using same pattern as patient registration
       const userId = user?.sub || user?.id || user?.userId;
@@ -1240,8 +1245,8 @@ export class MedicalHistoryService {
 
       // Check if record already exists
       const existingRecord = await this.pool.query(
-        'SELECT id FROM patient_medical_history WHERE patient_id = $1 AND medical_history_option_id = $2 AND location_id = $3',
-        [numericPatientId, medical_history_option_id, location_id]
+        'SELECT id FROM patient_medical_history WHERE patient_id = $1 AND medical_history_option_id = $2',
+        [numericPatientId, medical_history_option_id]
       );
 
       if (existingRecord.rows.length > 0) {
@@ -1249,12 +1254,12 @@ export class MedicalHistoryService {
         return { message: 'Record already exists' };
       }
 
-      // Insert new record with location_id
+      // Insert new record
 
 
       const result = await this.pool.query(
-        'INSERT INTO patient_medical_history (patient_id, medical_history_id, medical_history_option_id, category_title, option_title, location_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
-        [numericPatientId, numericMedicalHistoryId, medical_history_option_id, category_title, option_title, location_id]
+        'INSERT INTO patient_medical_history (patient_id, medical_history_id, medical_history_option_id, category_title, option_title) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+        [numericPatientId, numericMedicalHistoryId, medical_history_option_id, category_title, option_title]
       );
 
 
@@ -1269,25 +1274,21 @@ export class MedicalHistoryService {
 
   async getPatientMedicalHistory(patientId: string, user: any) {
     try {
-      // Use patientId directly as numeric ID
       const numericPatientId = parseInt(patientId);
+      const location_id = user?.primary_location_id || user?.location_id || 1;
 
-      // Get location_id dynamically
-      const userId = user?.sub || user?.id || user?.userId;
-      const location_id = await this.getUserLocationId(userId);
-
-      // Get patient's medical history grouped by category
       const result = await this.pool.query(
-        `SELECT pmh.*, mh.title as medical_history_title, mho.title as option_title 
+        `SELECT pmh.*, 
+         COALESCE(mh.title, pmh.category_title) as medical_history_title, 
+         COALESCE(mho.title, pmh.option_title) as option_title 
          FROM patient_medical_history pmh
-         JOIN medical_history mh ON pmh.medical_history_id = mh.id
-         JOIN medical_history_options mho ON pmh.medical_history_option_id = mho.id
-         WHERE pmh.patient_id = $1 AND pmh.location_id = $2
-         ORDER BY mh.title, mho.title`,
-        [numericPatientId, location_id]
+         LEFT JOIN medical_history mh ON pmh.medical_history_id = mh.id
+         LEFT JOIN medical_history_options mho ON pmh.medical_history_option_id = mho.id
+         WHERE pmh.patient_id = $1
+         ORDER BY COALESCE(mh.title, pmh.category_title), COALESCE(mho.title, pmh.option_title)`,
+        [numericPatientId]
       );
 
-      // Group by category
       const groupedHistory = result.rows.reduce((acc, row) => {
         const category = row.medical_history_title;
         if (!acc[category]) {
@@ -1311,17 +1312,11 @@ export class MedicalHistoryService {
   async deletePatientMedicalHistory(data: any, user: any) {
     try {
       const { patient_id, medical_history_option_id } = data;
-
-      // Use patient_id directly as numeric ID
       const numericPatientId = parseInt(patient_id);
 
-      // Get location_id dynamically using same pattern as patient registration
-      const userId = user?.sub || user?.id || user?.userId;
-      const location_id = await this.getUserLocationId(userId);
-
       await this.pool.query(
-        'DELETE FROM patient_medical_history WHERE patient_id = $1 AND medical_history_option_id = $2 AND location_id = $3',
-        [numericPatientId, medical_history_option_id, location_id]
+        'DELETE FROM patient_medical_history WHERE patient_id = $1 AND medical_history_option_id = $2',
+        [numericPatientId, medical_history_option_id]
       );
 
       return { success: true };
