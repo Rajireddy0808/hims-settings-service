@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, UseGuards, Request, Param, Query } from '@nestjs/common';
+import { Controller, Post, Get, Put, Body, UseGuards, Request, Param, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PatientRegistrationService } from '../services/patient-registration.service';
@@ -22,18 +22,22 @@ export class PatientRegistrationController {
     @Request() req, 
     @Query('locationId') queryLocationId?: string,
     @Query('patient_source_id') patientSourceId?: string,
-    @Query('from_date') fromDate?: string,
-    @Query('to_date') toDate?: string
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string
   ) {
     const userId = req.user.sub || req.user.id || req.user.userId;
-     const locationId = queryLocationId ? parseInt(queryLocationId) : await this.userLocationService.getUserLocationId(userId);
+    const locationId = queryLocationId ? parseInt(queryLocationId) : await this.userLocationService.getUserLocationId(userId);
+    const pageNum = page ? parseInt(page) : 1;
+    const limitNum = limit ? parseInt(limit) : 10;
 
     
     if (patientSourceId) {
       return this.patientListService.getPatientsBySource(locationId, parseInt(patientSourceId), fromDate, toDate);
     }
     
-    return this.patientListService.getAllPatients(locationId, fromDate, toDate);
+    return this.patientListService.getAllPatients(locationId, fromDate, toDate, pageNum, limitNum);
   }
 
   @Get(':id')
@@ -61,5 +65,19 @@ export class PatientRegistrationController {
 
     
     return this.patientRegistrationService.registerPatient(patientData, locationId, userId);
+  }
+
+  @Put(':id')
+  @ApiOperation({ summary: 'Update patient' })
+  async updatePatient(@Param('id') patientId: string, @Request() req, @Body() patientData: any) {
+    const userId = req.user.sub || req.user.id || req.user.userId;
+    
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+    
+    const locationId = await this.userLocationService.getUserLocationId(userId);
+    
+    return this.patientRegistrationService.updatePatient(patientId, patientData, locationId, userId);
   }
 }

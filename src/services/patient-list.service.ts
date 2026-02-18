@@ -10,19 +10,36 @@ export class PatientListService {
     private patientRepository: Repository<Patient>,
   ) {}
 
-  async getAllPatients(locationId: number, fromDate?: string, toDate?: string) {
+  async getAllPatients(locationId: number, fromDate?: string, toDate?: string, page: number = 1, limit: number = 10) {
+    console.log('Date filters:', { fromDate, toDate, locationId }); // Debug log
+    
     const queryBuilder = this.patientRepository.createQueryBuilder('patient')
       .where('patient.location_id = :locationId', { locationId });
     
     if (fromDate) {
+      console.log('Adding fromDate filter:', fromDate);
       queryBuilder.andWhere('DATE(patient.created_at) >= :fromDate', { fromDate });
     }
     
     if (toDate) {
+      console.log('Adding toDate filter:', toDate);
       queryBuilder.andWhere('DATE(patient.created_at) <= :toDate', { toDate });
     }
     
-    return queryBuilder.orderBy('patient.created_at', 'DESC').getMany();
+    const [data, total] = await queryBuilder
+      .orderBy('patient.created_at', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+    
+    
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    };
   }
 
   async getPatientById(patientId: string, locationId: number, userId?: string) {

@@ -7,11 +7,11 @@ export class DrugHistoryService {
 
   constructor() {
     this.pool = new Pool({
-      host: '127.0.0.1',
-      port: 5432,
+      host: 'crossover.proxy.rlwy.net',
+      port: 37250,
       user: 'postgres',
-      password: '12345',
-      database: 'postgres',
+      password: 'xHlKZdwqKVpjVGLfvrgPmUyTvMaqVTQO',
+      database: 'railway',
     });
   }
 
