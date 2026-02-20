@@ -7,10 +7,10 @@ export class LifestyleService {
 
   constructor() {
     this.pool = new Pool({
-      host: 'crossover.proxy.rlwy.net',
-      port: 37250,
+      host: 'yamanote.proxy.rlwy.net',
+      port: 50704,
       user: 'postgres',
-      password: 'xHlKZdwqKVpjVGLfvrgPmUyTvMaqVTQO',
+      password: 'JUBTkYaoMOhMpoZheoifZkNOJkDBmFJr',
       database: 'railway',
     });
   }

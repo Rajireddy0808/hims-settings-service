@@ -6,11 +6,11 @@ export class AllergiesService {
   private pool: Pool;
 
   constructor() {
-    this.pool = new Pool({
-      host: 'crossover.proxy.rlwy.net',
-      port: 37250,
+   this.pool = new Pool({
+      host: 'yamanote.proxy.rlwy.net',
+      port: 50704,
       user: 'postgres',
-      password: 'xHlKZdwqKVpjVGLfvrgPmUyTvMaqVTQO',
+      password: 'JUBTkYaoMOhMpoZheoifZkNOJkDBmFJr',
       database: 'railway',
     });
   }
