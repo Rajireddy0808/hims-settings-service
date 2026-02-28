@@ -1,11 +1,15 @@
 const { Client } = require('pg');
+require('dotenv').config();
 
 const client = new Client({
-  host: 'localhost',
-  port: 5432,
-  database: 'postgres',
-  user: 'postgres',
-  password: '12345'
+  host: process.env.DB_HOST || 'localhost',
+  port: process.env.DB_PORT || 5432,
+  database: process.env.DB_NAME || 'postgres',
+  user: process.env.DB_USERNAME || 'postgres',
+  password: process.env.DB_PASSWORD || '12345',
+  ssl: {
+    rejectUnauthorized: false,
+  },
 });
 
 async function createTable() {

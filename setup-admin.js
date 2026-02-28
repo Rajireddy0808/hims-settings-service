@@ -8,6 +8,9 @@ const pool = new Pool({
   user: process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD || '12345',
   database: process.env.DB_NAME || 'postgres',
+  ssl: {
+    rejectUnauthorized: false,
+  },
 });
 
 async function checkAndCreateAdmin() {

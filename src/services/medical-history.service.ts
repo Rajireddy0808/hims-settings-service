@@ -13,11 +13,14 @@ export class MedicalHistoryService {
     private userRepository: Repository<User>,
   ) {
     this.pool = new Pool({
-      host: 'yamanote.proxy.rlwy.net',
-      port: 50704,
-      user: 'postgres',
-      password: 'JUBTkYaoMOhMpoZheoifZkNOJkDBmFJr',
-      database: 'railway',
+      host: process.env.DB_HOST,
+      port: parseInt(process.env.DB_PORT),
+      user: process.env.DB_USERNAME,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      ssl: {
+        rejectUnauthorized: false,
+      },
     });
   }
 

@@ -7,11 +7,14 @@ export class DrugHistoryService {
 
   constructor() {
    this.pool = new Pool({
-      host: 'yamanote.proxy.rlwy.net',
-      port: 50704,
-      user: 'postgres',
-      password: 'JUBTkYaoMOhMpoZheoifZkNOJkDBmFJr',
-      database: 'railway',
+      host: process.env.DB_HOST,
+      port: parseInt(process.env.DB_PORT),
+      user: process.env.DB_USERNAME,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      ssl: {
+        rejectUnauthorized: false,
+      },
     });
   }
 
@@ -93,7 +96,8 @@ export class DrugHistoryService {
   async getPatientDrugHistory(patientId: string, user: any) {
     try {
       const numericPatientId = parseInt(patientId);
-      const location_id = user?.primary_location_id || user?.location_id || 1;
+      const locationIdRaw = user?.primary_location_id || user?.location_id || 1;
+      const location_id = typeof locationIdRaw === 'string' ? parseInt(locationIdRaw.split(',')[0]) : locationIdRaw;
 
       const result = await this.pool.query(
         `SELECT pdh.*, 
