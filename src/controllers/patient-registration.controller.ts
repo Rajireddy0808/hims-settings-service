@@ -29,7 +29,14 @@ export class PatientRegistrationController {
     @Query('limit') limit?: string
   ) {
     const userId = req.user.sub || req.user.id || req.user.userId;
-    const locationId = queryLocationId ? parseInt(queryLocationId) : await this.userLocationService.getUserLocationId(userId);
+    let locationId: number;
+
+    if (queryLocationId && queryLocationId !== 'all' && queryLocationId !== '0') {
+      locationId = parseInt(queryLocationId);
+    } else {
+      locationId = await this.userLocationService.getUserLocationId(userId);
+    }
+
     const pageNum = page ? parseInt(page) : 1;
     const limitNum = limit ? parseInt(limit) : 10;
 
