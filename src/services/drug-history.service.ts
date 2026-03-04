@@ -6,7 +6,7 @@ export class DrugHistoryService {
   private pool: Pool;
 
   constructor() {
-   this.pool = new Pool({
+    this.pool = new Pool({
       host: process.env.DB_HOST,
       port: parseInt(process.env.DB_PORT),
       user: process.env.DB_USERNAME,
@@ -93,10 +93,10 @@ export class DrugHistoryService {
     }
   }
 
-  async getPatientDrugHistory(patientId: string, user: any) {
+  async getPatientDrugHistory(patientId: string, locationId: string, user: any) {
     try {
       const numericPatientId = parseInt(patientId);
-      const locationIdRaw = user?.primary_location_id || user?.location_id || 1;
+      const locationIdRaw = locationId || user?.primary_location_id || user?.location_id || 1;
       const location_id = typeof locationIdRaw === 'string' ? parseInt(locationIdRaw.split(',')[0]) : locationIdRaw;
 
       const result = await this.pool.query(

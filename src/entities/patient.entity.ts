@@ -84,6 +84,12 @@ export class Patient {
   patient_source_id: number;
 
   @Column({ nullable: true })
+  ref_patient_id: string;
+
+  @Column({ nullable: true })
+  employee_ref_id: number;
+
+  @Column({ nullable: true })
   occupation: string;
 
   @Column({ nullable: true })

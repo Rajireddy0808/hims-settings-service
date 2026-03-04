@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, UseGuards, Request, Query } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { DrugHistoryService } from '../services/drug-history.service';
@@ -8,7 +8,7 @@ import { DrugHistoryService } from '../services/drug-history.service';
 @UseGuards(JwtAuthGuard)
 @Controller()
 export class DrugHistoryController {
-  constructor(private readonly drugHistoryService: DrugHistoryService) {}
+  constructor(private readonly drugHistoryService: DrugHistoryService) { }
 
   @Get('drug-history')
   async getDrugHistory() {
@@ -21,8 +21,12 @@ export class DrugHistoryController {
   }
 
   @Get('patient-drug-history/:patientId')
-  async getPatientDrugHistory(@Param('patientId') patientId: string, @Request() req: any) {
-    return this.drugHistoryService.getPatientDrugHistory(patientId, req.user);
+  async getPatientDrugHistory(
+    @Param('patientId') patientId: string,
+    @Query('location_id') locationId: string,
+    @Request() req: any
+  ) {
+    return this.drugHistoryService.getPatientDrugHistory(patientId, locationId, req.user);
   }
 
   @Post('patient-drug-history')

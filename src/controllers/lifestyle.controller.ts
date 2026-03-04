@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, UseGuards, Request, Query } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { LifestyleService } from '../services/lifestyle.service';
@@ -8,7 +8,7 @@ import { LifestyleService } from '../services/lifestyle.service';
 @UseGuards(JwtAuthGuard)
 @Controller()
 export class LifestyleController {
-  constructor(private readonly lifestyleService: LifestyleService) {}
+  constructor(private readonly lifestyleService: LifestyleService) { }
 
   @Get('lifestyle')
   async getLifestyle() {
@@ -21,8 +21,12 @@ export class LifestyleController {
   }
 
   @Get('patient-lifestyle/:patientId')
-  async getPatientLifestyle(@Param('patientId') patientId: string, @Request() req: any) {
-    return this.lifestyleService.getPatientLifestyle(patientId, req.user);
+  async getPatientLifestyle(
+    @Param('patientId') patientId: string,
+    @Query('location_id') locationId: string,
+    @Request() req: any
+  ) {
+    return this.lifestyleService.getPatientLifestyle(patientId, locationId, req.user);
   }
 
   @Post('patient-lifestyle')

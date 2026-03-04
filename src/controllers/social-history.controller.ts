@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, UseGuards, Request, Query } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { SocialHistoryService } from '../services/social-history.service';
@@ -8,7 +8,7 @@ import { SocialHistoryService } from '../services/social-history.service';
 @UseGuards(JwtAuthGuard)
 @Controller()
 export class SocialHistoryController {
-  constructor(private readonly socialHistoryService: SocialHistoryService) {}
+  constructor(private readonly socialHistoryService: SocialHistoryService) { }
 
   @Get('social-history')
   async getSocialHistory() {
@@ -21,8 +21,12 @@ export class SocialHistoryController {
   }
 
   @Get('patient-social-history/:patientId')
-  async getPatientSocialHistory(@Param('patientId') patientId: string, @Request() req: any) {
-    return this.socialHistoryService.getPatientSocialHistory(patientId, req.user);
+  async getPatientSocialHistory(
+    @Param('patientId') patientId: string,
+    @Query('location_id') locationId: string,
+    @Request() req: any
+  ) {
+    return this.socialHistoryService.getPatientSocialHistory(patientId, locationId, req.user);
   }
 
   @Post('patient-social-history')

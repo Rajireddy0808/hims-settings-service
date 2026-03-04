@@ -14,16 +14,17 @@ export class PatientRegistrationController {
     private readonly patientRegistrationService: PatientRegistrationService,
     private readonly patientListService: PatientListService,
     private readonly userLocationService: UserLocationService
-  ) {}
+  ) { }
 
   @Get()
   @ApiOperation({ summary: 'Get all patients' })
   async getAllPatients(
-    @Request() req, 
+    @Request() req,
     @Query('locationId') queryLocationId?: string,
     @Query('patient_source_id') patientSourceId?: string,
     @Query('fromDate') fromDate?: string,
     @Query('toDate') toDate?: string,
+    @Query('search') search?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string
   ) {
@@ -32,12 +33,44 @@ export class PatientRegistrationController {
     const pageNum = page ? parseInt(page) : 1;
     const limitNum = limit ? parseInt(limit) : 10;
 
-    
+
     if (patientSourceId) {
       return this.patientListService.getPatientsBySource(locationId, parseInt(patientSourceId), fromDate, toDate);
     }
-    
-    return this.patientListService.getAllPatients(locationId, fromDate, toDate, pageNum, limitNum);
+
+    return this.patientListService.getAllPatients(locationId, fromDate, toDate, pageNum, limitNum, search);
+  }
+
+  @Get('ref-patients/list')
+  @ApiOperation({ summary: 'Get all ref patients' })
+  async getRefPatients(
+    @Request() req,
+    @Query('locationId') queryLocationId?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string
+  ) {
+    const userId = req.user.sub || req.user.id || req.user.userId;
+    const locationId = queryLocationId ? parseInt(queryLocationId) : await this.userLocationService.getUserLocationId(userId);
+    const pageNum = page ? parseInt(page) : 1;
+    const limitNum = limit ? parseInt(limit) : 10;
+
+    return this.patientListService.getRefPatients(locationId, pageNum, limitNum);
+  }
+
+  @Get('employee-ref/list')
+  @ApiOperation({ summary: 'Get all employee ref patients' })
+  async getEmployeeRefPatients(
+    @Request() req,
+    @Query('locationId') queryLocationId?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string
+  ) {
+    const userId = req.user.sub || req.user.id || req.user.userId;
+    const locationId = queryLocationId ? parseInt(queryLocationId) : await this.userLocationService.getUserLocationId(userId);
+    const pageNum = page ? parseInt(page) : 1;
+    const limitNum = limit ? parseInt(limit) : 10;
+
+    return this.patientListService.getEmployeeRefPatients(locationId, pageNum, limitNum);
   }
 
   @Get(':id')
@@ -45,7 +78,7 @@ export class PatientRegistrationController {
   async getPatientById(@Param('id') patientId: string, @Request() req, @Query('locationId') queryLocationId?: string) {
     const userId = req.user.sub || req.user.id || req.user.userId;
     const locationId = queryLocationId ? parseInt(queryLocationId) : await this.userLocationService.getUserLocationId(userId);
-    
+
     // Validate user access to patient data
     return this.patientListService.getPatientById(patientId, locationId, userId);
   }
@@ -54,16 +87,16 @@ export class PatientRegistrationController {
   @ApiOperation({ summary: 'Register new patient' })
   async registerPatient(@Request() req, @Body() patientData: any) {
     const userId = req.user.sub || req.user.id || req.user.userId;
-    
+
     if (!userId) {
       throw new Error('User ID is required');
     }
-    
+
     // Dynamically get user's location ID
     const locationId = await this.userLocationService.getUserLocationId(userId);
-    
 
-    
+
+
     return this.patientRegistrationService.registerPatient(patientData, locationId, userId);
   }
 
@@ -71,13 +104,13 @@ export class PatientRegistrationController {
   @ApiOperation({ summary: 'Update patient' })
   async updatePatient(@Param('id') patientId: string, @Request() req, @Body() patientData: any) {
     const userId = req.user.sub || req.user.id || req.user.userId;
-    
+
     if (!userId) {
       throw new Error('User ID is required');
     }
-    
+
     const locationId = await this.userLocationService.getUserLocationId(userId);
-    
+
     return this.patientRegistrationService.updatePatient(patientId, patientData, locationId, userId);
   }
 }

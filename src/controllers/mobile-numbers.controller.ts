@@ -110,10 +110,8 @@ export class MobileNumbersController {
   @UseGuards(JwtAuthGuard)
   @Get()
   @ApiOperation({ summary: 'Get all mobile numbers' })
-  async getAllMobileNumbers(@Request() req) {
-    const userId = req.user?.user_id || req.user?.id || req.user?.sub;
-    console.log('Getting mobile numbers for user:', userId);
-    return this.mobileNumbersService.getAllMobileNumbers(userId);
+  async getAllMobileNumbers(@Request() req, @Query('page') page: number = 1, @Query('limit') limit: number = 10) {
+    return this.mobileNumbersService.getAllUnassignedNumbers(page, limit);
   }
 
   @UseGuards(JwtAuthGuard)

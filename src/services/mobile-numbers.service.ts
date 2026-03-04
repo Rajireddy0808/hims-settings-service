@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { MobileNumber } from '../entities/mobile-number.entity';
 
 
@@ -235,10 +235,32 @@ export class MobileNumbersService {
     });
   }
 
+  async getAllUnassignedNumbers(page: number = 1, limit: number = 10) {
+    const skip = (page - 1) * limit;
+    
+    const [data, total] = await this.mobileNumberRepository
+      .createQueryBuilder('mobile_numbers')
+      .where('mobile_numbers.user_id IS NULL')
+      .orderBy('mobile_numbers.created_at', 'DESC')
+      .take(limit)
+      .skip(skip)
+      .getManyAndCount();
+
+    return {
+      data,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    };
+  }
+
   async addMobileNumber(mobile: string, userId: number, locationId: number) {
     const mobileNumber = this.mobileNumberRepository.create({
       mobile,
-      user_id: userId,
+      user_id: null,
       location_id: locationId,
       created_by: userId
     });
@@ -265,7 +287,7 @@ export class MobileNumbersService {
           if (mobile && mobile.length >= 10) {
             mobileNumbers.push({
               mobile: mobile,
-              user_id: userId,
+              user_id: null,
               location_id: locationId,
               created_by: userId
             });

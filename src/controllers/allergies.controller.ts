@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, UseGuards, Request, Query } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AllergiesService } from '../services/allergies.service';
@@ -8,7 +8,7 @@ import { AllergiesService } from '../services/allergies.service';
 @UseGuards(JwtAuthGuard)
 @Controller()
 export class AllergiesController {
-  constructor(private readonly allergiesService: AllergiesService) {}
+  constructor(private readonly allergiesService: AllergiesService) { }
 
   @Get('allergies')
   async getAllergies() {
@@ -21,8 +21,12 @@ export class AllergiesController {
   }
 
   @Get('patient-allergies/:patientId')
-  async getPatientAllergies(@Param('patientId') patientId: string, @Request() req: any) {
-    return this.allergiesService.getPatientAllergies(patientId, req.user);
+  async getPatientAllergies(
+    @Param('patientId') patientId: string,
+    @Query('location_id') locationId: string,
+    @Request() req: any
+  ) {
+    return this.allergiesService.getPatientAllergies(patientId, locationId, req.user);
   }
 
   @Post('patient-allergies')

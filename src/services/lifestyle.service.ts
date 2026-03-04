@@ -85,10 +85,10 @@ export class LifestyleService {
     }
   }
 
-  async getPatientLifestyle(patientId: string, user: any) {
+  async getPatientLifestyle(patientId: string, locationId: string, user: any) {
     try {
       const numericPatientId = parseInt(patientId);
-      const locationIdRaw = user?.primary_location_id || user?.location_id || 1;
+      const locationIdRaw = locationId || user?.primary_location_id || user?.location_id || 1;
       const location_id = typeof locationIdRaw === 'string' ? parseInt(locationIdRaw.split(',')[0]) : locationIdRaw;
 
       const result = await this.pool.query(

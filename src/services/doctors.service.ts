@@ -16,32 +16,32 @@ export class DoctorsService {
     @InjectRepository(DoctorConsultationFee)
     private consultationFeeRepository: Repository<DoctorConsultationFee>,
     private configService: ConfigService
-  ) {}
+  ) { }
 
   async getDoctors(locationId?: number) {
     try {
+      const query = `
+        SELECT DISTINCT 
+          u.id, 
+          u.username, 
+          u.first_name as "firstName", 
+          u.first_name,
+          u.last_name as "lastName",
+          u.last_name, 
+          u.email, 
+          u.phone,
+          u.primary_location_id,
+          ui.qualification,
+          ui.years_of_experience as "yearsOfExperience"
+        FROM users u
+        INNER JOIN user_info ui ON u.id = ui.user_id
+        LEFT JOIN user_location_permissions ulp ON u.id = ulp.user_id
+        WHERE ui.user_type = 'doctor'
+        ${locationId ? 'AND (u.primary_location_id = $1 OR ulp.location_id = $1)' : ''}
+      `;
 
-      
-      let query;
-      let params = [];
-      
-      if (locationId) {
-        // Filter users by location using user_location_permissions table
-        query = `
-          SELECT DISTINCT u.*
-          FROM users u
-          INNER JOIN user_location_permissions ulp ON u.id = ulp.user_id
-          WHERE ulp.location_id = $1
-        `;
-        params = [locationId];
-      } else {
-        // Get all users
-        query = 'SELECT * FROM users';
-      }
-      
+      const params = locationId ? [locationId] : [];
       const users = await this.userRepository.query(query, params);
-      
-
       return users;
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -53,18 +53,18 @@ export class DoctorsService {
   async createBulkTimeslots(data: { userId: number; date: string; fromTime: string; toTime: string; duration: number; locationId: number }) {
     try {
 
-      
+
       const timeSlots = [];
       const [startHour, startMin] = data.fromTime.split(':').map(Number);
       const [endHour, endMin] = data.toTime.split(':').map(Number);
-      
+
       let startMinutes = startHour * 60 + startMin;
       let endMinutes = endHour * 60 + endMin;
-      
+
       if (endMinutes <= startMinutes) {
         endMinutes += 24 * 60;
       }
-      
+
       for (let minutes = startMinutes; minutes < endMinutes; minutes += data.duration) {
         const actualMinutes = minutes % (24 * 60);
         const hours = Math.floor(actualMinutes / 60);
@@ -72,7 +72,7 @@ export class DoctorsService {
         const timeStr = `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
         timeSlots.push(timeStr);
       }
-      
+
       const results = [];
       for (const time of timeSlots) {
         const query = `
@@ -80,7 +80,7 @@ export class DoctorsService {
           VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
           RETURNING *
         `;
-        
+
         const result = await this.timeslotRepository.query(query, [
           data.userId,
           data.locationId,
@@ -88,7 +88,7 @@ export class DoctorsService {
           time,
           1
         ]);
-        
+
         results.push(result[0]);
       }
 
@@ -103,35 +103,35 @@ export class DoctorsService {
   async getDoctorTimeslots(locationId?: number, userId?: number, fromDate?: string, toDate?: string) {
     try {
 
-      
+
       let whereConditions = ['dt.status = \'1\''];
       const params = [];
       let paramIndex = 1;
-      
+
       if (locationId) {
         whereConditions.push(`dt.location_id = $${paramIndex}`);
         params.push(locationId);
         paramIndex++;
       }
-      
+
       if (userId) {
         whereConditions.push(`dt.user_id = $${paramIndex}`);
         params.push(userId);
         paramIndex++;
       }
-      
+
       if (fromDate) {
         whereConditions.push(`dt.date >= $${paramIndex}`);
         params.push(fromDate);
         paramIndex++;
       }
-      
+
       if (toDate) {
         whereConditions.push(`dt.date <= $${paramIndex}`);
         params.push(toDate);
         paramIndex++;
       }
-      
+
       const query = `
         SELECT 
           dt.id,
@@ -152,9 +152,9 @@ export class DoctorsService {
         WHERE ${whereConditions.join(' AND ')}
         ORDER BY dt.date, dt.time
       `;
-      
+
       const timeslots = await this.timeslotRepository.query(query, params);
-      
+
 
       return timeslots;
     } catch (error) {
@@ -166,7 +166,7 @@ export class DoctorsService {
   async getAllDoctorTimeslots(locationId?: number) {
     try {
 
-      
+
       const query = `
         SELECT 
           dt.id,
@@ -187,10 +187,10 @@ export class DoctorsService {
         ${locationId ? 'WHERE dt.location_id = $1' : ''}
         ORDER BY dt.date, dt.time
       `;
-      
+
       const params = locationId ? [locationId] : [];
       const timeslots = await this.timeslotRepository.query(query, params);
-      
+
 
       return timeslots;
     } catch (error) {
@@ -208,13 +208,13 @@ export class DoctorsService {
         WHERE id = $2 
         RETURNING *
       `;
-      
+
       const result = await this.timeslotRepository.query(query, [status, id]);
-      
+
       if (result.length === 0) {
         throw new Error('Timeslot not found');
       }
-      
+
       return { success: true, data: result[0] };
     } catch (error) {
       console.error('Error updating timeslot status:', error);
@@ -225,7 +225,7 @@ export class DoctorsService {
   async getConsultationFees(locationId?: number) {
     try {
 
-      
+
       const query = `
         SELECT 
           dcf.id,
@@ -243,10 +243,10 @@ export class DoctorsService {
         WHERE dcf.location_id = $1
         ORDER BY dcf.id DESC
       `;
-      
+
       const fees = await this.consultationFeeRepository.query(query, [locationId || 1]);
 
-      
+
       return fees;
     } catch (error) {
       console.error('Error fetching consultation fees:', error);
@@ -261,7 +261,7 @@ export class DoctorsService {
         VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
         RETURNING *
       `;
-      
+
       const result = await this.consultationFeeRepository.query(query, [
         data.locationId,
         data.userId,
@@ -269,7 +269,7 @@ export class DoctorsService {
         data.cashFee,
         1
       ]);
-      
+
       return { success: true, data: result[0] };
     } catch (error) {
       console.error('Error creating consultation fee:', error);
@@ -285,13 +285,13 @@ export class DoctorsService {
         WHERE id = $2 
         RETURNING *
       `;
-      
+
       const result = await this.consultationFeeRepository.query(query, [data.cashFee, id]);
-      
+
       if (result.length === 0) {
         throw new Error('Consultation fee not found');
       }
-      
+
       return { success: true, data: result[0] };
     } catch (error) {
       console.error('Error updating consultation fee:', error);
@@ -303,7 +303,7 @@ export class DoctorsService {
     try {
       const query = `DELETE FROM doctor_consultation_fee WHERE id = $1`;
       const result = await this.consultationFeeRepository.query(query, [id]);
-      
+
       return { success: true };
     } catch (error) {
       console.error('Error deleting consultation fee:', error);

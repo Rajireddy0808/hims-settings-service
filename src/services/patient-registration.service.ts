@@ -20,7 +20,7 @@ export class PatientRegistrationService {
       gender, mobile, email, dateOfBirth, bloodGroup, maritalStatus,
       address1, district, state, country, pinCode, emergencyContact,
       medicalHistory, medicalConditions, fee, feeType, source,
-      occupation, specialization, doctor, amount, password
+      occupation, specialization, doctor, amount, password, refPatientId, employeeRefId
     } = patientData;
 
     // Get location code
@@ -79,7 +79,9 @@ export class PatientRegistrationService {
       specialization,
       doctor,
       amount: amount ? parseFloat(amount) : null,
-      password: password ? crypto.createHash('md5').update(password).digest('hex') : null
+      password: password ? crypto.createHash('md5').update(password).digest('hex') : null,
+      ref_patient_id: refPatientId,
+      employee_ref_id: employeeRefId
       // System fields (created_by, created_at, updated_at, status) are auto-generated
     });
 

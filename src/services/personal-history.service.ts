@@ -55,11 +55,11 @@ export class PersonalHistoryService {
         'SELECT id FROM personal_history WHERE title = $1',
         [personal_history_id]
       );
-      
+
       if (personalHistoryResult.rows.length === 0) {
         throw new Error(`Personal history not found with title: ${personal_history_id}`);
       }
-      
+
       const numericPersonalHistoryId = personalHistoryResult.rows[0].id;
 
       // Check if record already exists
@@ -67,7 +67,7 @@ export class PersonalHistoryService {
         'SELECT id FROM patient_personal_history WHERE patient_id = $1 AND personal_history_option_id = $2 AND location_id = $3',
         [patient_id, personal_history_option_id, location_id]
       );
-      
+
       if (existingRecord.rows.length > 0) {
         return { message: 'Record already exists' };
       }
@@ -85,10 +85,10 @@ export class PersonalHistoryService {
     }
   }
 
-  async getPatientPersonalHistory(patientId: string, user: any) {
+  async getPatientPersonalHistory(patientId: string, locationId: string, user: any) {
     try {
       const numericPatientId = parseInt(patientId);
-      const locationIdRaw = user?.primary_location_id || user?.location_id || 1;
+      const locationIdRaw = locationId || user?.primary_location_id || user?.location_id || 1;
       const location_id = typeof locationIdRaw === 'string' ? parseInt(locationIdRaw.split(',')[0]) : locationIdRaw;
 
       const result = await this.pool.query(
