@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Body, Param, UseGuards, Request, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request, Query } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PersonalHistoryService } from '../services/personal-history.service';
@@ -13,6 +13,16 @@ export class PersonalHistoryController {
   @Get('personal-history')
   async getPersonalHistory() {
     return this.personalHistoryService.getPersonalHistory();
+  }
+
+  @Post('personal-history')
+  async createPersonalHistory(@Body() data: any) {
+    return this.personalHistoryService.createPersonalHistory(data);
+  }
+
+  @Put('personal-history/:id')
+  async updatePersonalHistory(@Param('id') id: string, @Body() data: any) {
+    return this.personalHistoryService.updatePersonalHistory(parseInt(id), data);
   }
 
   @Get('personal-history-options/:id')

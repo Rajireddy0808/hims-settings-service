@@ -9,9 +9,9 @@ export class EmployeeExpensesService {
   constructor(
     @InjectRepository(EmployeeExpense)
     private employeeExpenseRepository: Repository<EmployeeExpense>,
-  ) {}
+  ) { }
 
-  async findAllWithEmployees(fromDate?: string, toDate?: string): Promise<any[]> {
+  async findAllWithEmployees(fromDate?: string, toDate?: string, page: number = 1, limit: number = 10): Promise<any> {
     try {
       const query = this.employeeExpenseRepository
         .createQueryBuilder('expense')
@@ -34,30 +34,41 @@ export class EmployeeExpensesService {
           'expense.created_at as expense_created_at',
           'expense.updated_at as expense_updated_at',
           'user.id as user_id',
-          'user.first_name as user_first_name', 
-          'user.last_name as user_last_name', 
+          'user.first_name as user_first_name',
+          'user.last_name as user_last_name',
           'user.email as user_email',
-          'approver.id as approver_id', 
-          'approver.first_name as approver_first_name', 
-          'approver.last_name as approver_last_name', 
+          'approver.id as approver_id',
+          'approver.first_name as approver_first_name',
+          'approver.last_name as approver_last_name',
           'approver.email as approver_email',
-          'category.*'
+          'category.id as category_id',
+          'category.name as category_name',
+          'category.description as category_description',
+          'category.is_active as category_is_active'
         ])
         .orderBy('expense.created_at', 'DESC');
 
       if (fromDate) {
         query.andWhere('expense.expense_date >= :fromDate', { fromDate });
       }
-      
+
       if (toDate) {
         query.andWhere('expense.expense_date <= :toDate', { toDate });
       }
 
+      // Clone query for count
+      const countQuery = Object.assign(Object.create(Object.getPrototypeOf(query)), query);
+      const totalRecords = await countQuery.select('COUNT(expense.id)', 'count').getRawOne();
+
+      // Apply pagination
+      const skip = (page - 1) * limit;
+      query.limit(limit).offset(skip);
+
       const result = await query.getRawMany();
-      
-      return result.map(raw => ({
+
+      const data = result.map(raw => ({
         id: raw.expense_id,
-        employeeId: raw.employee_id,
+        employeeId: raw.expense_employee_id,
         locationId: raw.expense_location_id,
         amount: raw.expense_amount,
         description: raw.expense_description,
@@ -70,10 +81,10 @@ export class EmployeeExpensesService {
         createdAt: raw.expense_created_at,
         updatedAt: raw.expense_updated_at,
         expenseCategory: {
-          id: raw.id_1,
-          name: raw.name,
-          description: raw.description_1,
-          isActive: raw.is_active
+          id: raw.category_id,
+          name: raw.category_name,
+          description: raw.category_description,
+          isActive: raw.category_is_active
         },
         employee: {
           id: raw.user_id,
@@ -88,9 +99,17 @@ export class EmployeeExpensesService {
           email: raw.approver_email
         } : null
       }));
+
+      return {
+        data,
+        total: parseInt(totalRecords.count),
+        page,
+        limit,
+        totalPages: Math.ceil(parseInt(totalRecords.count) / limit)
+      };
     } catch (error) {
       console.error('Error in findAllWithEmployees:', error);
-      return [];
+      return { data: [], total: 0, page, limit, totalPages: 0 };
     }
   }
 
@@ -120,7 +139,7 @@ export class EmployeeExpensesService {
       }
 
       const result = await query.getRawMany();
-      
+
       return result.map(raw => ({
         id: raw.expense_id,
         amount: raw.expense_amount,
@@ -146,7 +165,7 @@ export class EmployeeExpensesService {
   async findAll(employeeId?: number): Promise<any[]> {
     try {
       console.log('Service findAll called with employeeId:', employeeId);
-      
+
       const query = this.employeeExpenseRepository
         .createQueryBuilder('expense')
         .leftJoinAndSelect('expense.expenseCategory', 'category')
@@ -163,7 +182,7 @@ export class EmployeeExpensesService {
 
       const expenses = await query.getMany();
       console.log('Found expenses:', expenses.length);
-      
+
       return expenses.map(expense => ({
         id: expense.id,
         employeeId: expense.employeeId,
@@ -226,7 +245,7 @@ export class EmployeeExpensesService {
 
     const expense = result.entities[0];
     const raw = result.raw[0];
-    
+
     return {
       ...expense,
       employee: {
@@ -263,12 +282,12 @@ export class EmployeeExpensesService {
   }
 
   async updateStatus(
-    id: number, 
-    updateStatusDto: UpdateExpenseStatusDto, 
+    id: number,
+    updateStatusDto: UpdateExpenseStatusDto,
     approverId: number
   ): Promise<any> {
     console.log('Updating expense with ID:', id, 'to status:', updateStatusDto.status);
-    
+
     // Get expense details before updating
     const expense = await this.employeeExpenseRepository.findOne({ where: { id } });
     if (!expense) {
@@ -283,7 +302,7 @@ export class EmployeeExpensesService {
         rejectionReason: updateStatusDto.rejectionReason
       })
     });
-    
+
     // If approved, deduct from cash balance
     if (updateStatusDto.status === ExpenseStatus.APPROVED && expense.locationId) {
       try {
@@ -296,9 +315,9 @@ export class EmployeeExpensesService {
         console.error('Error updating cash balance:', error);
       }
     }
-    
+
     console.log('Update result:', updateResult);
-    
+
     return { success: true, message: 'Status updated successfully', affected: updateResult.affected };
   }
 
@@ -321,7 +340,7 @@ export class EmployeeExpensesService {
 
   async remove(id: number, employeeId: number): Promise<void> {
     const expense = await this.findOne(id);
-    
+
     if (expense.employeeId !== employeeId) {
       throw new ForbiddenException('You can only delete your own expenses');
     }

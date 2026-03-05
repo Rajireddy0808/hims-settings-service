@@ -1,13 +1,16 @@
 import { IsNotEmpty, IsNumber, IsString, IsOptional, IsDateString, IsEnum } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ExpenseStatus } from '../entities/employee-expense.entity';
 
 export class CreateExpenseDto {
   @IsNotEmpty()
   @IsNumber()
+  @Type(() => Number)
   expenseCategoryId: number;
 
   @IsNotEmpty()
   @IsNumber()
+  @Type(() => Number)
   amount: number;
 
   @IsOptional()

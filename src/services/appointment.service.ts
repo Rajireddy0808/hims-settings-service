@@ -12,7 +12,7 @@ export class AppointmentService {
     @InjectRepository(Doctor)
     private doctorRepository: Repository<Doctor>,
     private dataSource: DataSource,
-  ) {}
+  ) { }
 
   async getAppointments(filters: {
     fromDate?: string;
@@ -25,9 +25,47 @@ export class AppointmentService {
     doctorId?: number;
   }) {
     try {
-      const { locationId } = filters;
+      const { locationId, fromDate, toDate, status, search, doctorId } = filters;
+      const params: any[] = [locationId];
+      let paramIndex = 2;
+      let whereClause = `WHERE a.location_id = $1`;
 
-      
+      if (fromDate) {
+        whereClause += ` AND a.appointment_date >= $${paramIndex}`;
+        params.push(fromDate);
+        paramIndex++;
+      }
+
+      if (toDate) {
+        whereClause += ` AND a.appointment_date <= $${paramIndex}`;
+        params.push(toDate);
+        paramIndex++;
+      }
+
+      if (status) {
+        whereClause += ` AND a.status = $${paramIndex}`;
+        params.push(status);
+        paramIndex++;
+      }
+
+      if (doctorId) {
+        whereClause += ` AND a.doctor_id = $${paramIndex}`;
+        params.push(doctorId);
+        paramIndex++;
+      }
+
+      if (search) {
+        whereClause += ` AND (
+          p.first_name ILIKE $${paramIndex} OR 
+          p.last_name ILIKE $${paramIndex} OR 
+          p.mobile ILIKE $${paramIndex} OR
+          d.first_name ILIKE $${paramIndex} OR
+          d.last_name ILIKE $${paramIndex}
+        )`;
+        params.push(`%${search}%`);
+        paramIndex++;
+      }
+
       const appointments = await this.dataSource.query(`
         SELECT 
           a.appointment_id,
@@ -63,23 +101,23 @@ export class AppointmentService {
           FROM call_history 
           ORDER BY patient_id, next_call_date DESC
         ) ch ON ch.patient_id::text = a.patient_id::text
-        WHERE a.location_id = $1
+        ${whereClause}
         ORDER BY a.appointment_date DESC, a.appointment_time DESC
-        LIMIT $2 OFFSET $3
-      `, [locationId, filters.limit, (filters.page - 1) * filters.limit]);
-      
-      // Get total count
+        LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+      `, [...params, filters.limit, (filters.page - 1) * filters.limit]);
+
+      // Get total count using the same filters
       const countResult = await this.dataSource.query(`
         SELECT COUNT(*) as total
         FROM appointments a
-        WHERE a.location_id = $1
-      `, [locationId]);
-      
+        LEFT JOIN patients p ON p.id = a.patient_id
+        LEFT JOIN users d ON d.id = a.doctor_id
+        ${whereClause}
+      `, params);
+
       const total = parseInt(countResult[0].total);
       const totalPages = Math.ceil(total / filters.limit);
-      
 
-      
       return {
         data: appointments.map(appointment => ({
           id: appointment.appointment_id,
@@ -120,11 +158,11 @@ export class AppointmentService {
     const queryBuilder = this.appointmentRepository
       .createQueryBuilder('appointment')
       .where('appointment.patient_id = :patientId', { patientId });
-    
+
     if (locationId) {
       queryBuilder.andWhere('appointment.location_id = :locationId', { locationId });
     }
-    
+
     const appointments = await queryBuilder.getMany();
 
     return appointments.map(appointment => ({
@@ -145,7 +183,7 @@ export class AppointmentService {
       'SELECT id FROM appointment_types WHERE code = $1 LIMIT 1',
       [appointmentData.appointmentType || 'consultation']
     );
-    
+
     const appointmentTypeId = appointmentTypeResult.length > 0 ? appointmentTypeResult[0].id : 1;
 
     const appointment = this.appointmentRepository.create({
@@ -243,7 +281,7 @@ export class AppointmentService {
         'SELECT id FROM appointment_types WHERE code = $1 LIMIT 1',
         [updateData.appointmentType || 'consultation']
       );
-      
+
       const appointmentTypeId = appointmentTypeResult.length > 0 ? appointmentTypeResult[0].id : 1;
 
       const result = await this.dataSource.query(`
@@ -276,7 +314,7 @@ export class AppointmentService {
         }
         throw new Error('Update failed - no rows affected');
       }
-      
+
       return {
         message: 'Appointment updated successfully',
         appointmentId

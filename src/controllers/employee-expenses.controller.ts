@@ -1,11 +1,15 @@
-import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards, Request, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards, Request, Query, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { EmployeeExpensesService } from '../services/employee-expenses.service';
 import { CreateExpenseDto, UpdateExpenseStatusDto } from '../dto/expense.dto';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
+import type { File } from 'multer';
 
 @Controller('employee-expenses')
 export class EmployeeExpensesController {
-  constructor(private readonly employeeExpensesService: EmployeeExpensesService) {}
+  constructor(private readonly employeeExpensesService: EmployeeExpensesService) { }
 
   @Put('update-status/:id')
   updateExpenseStatus(
@@ -31,8 +35,18 @@ export class EmployeeExpensesController {
 
   @UseGuards(JwtAuthGuard)
   @Get('all')
-  findAllExpenses(@Query('fromDate') fromDate?: string, @Query('toDate') toDate?: string) {
-    return this.employeeExpensesService.findAllWithEmployees(fromDate, toDate);
+  findAllExpenses(
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string
+  ) {
+    return this.employeeExpensesService.findAllWithEmployees(
+      fromDate,
+      toDate,
+      page ? +page : 1,
+      limit ? +limit : 10
+    );
   }
 
   @UseGuards(JwtAuthGuard)
@@ -55,11 +69,39 @@ export class EmployeeExpensesController {
 
   @UseGuards(JwtAuthGuard)
   @Post()
-  async create(@Request() req, @Body() createExpenseDto: CreateExpenseDto) {
+  @UseInterceptors(FileInterceptor('receipt', {
+    storage: diskStorage({
+      destination: (req, file, cb) => {
+        const fs = require('fs');
+        const uploadPath = './uploads/expenses';
+        if (!fs.existsSync(uploadPath)) {
+          fs.mkdirSync(uploadPath, { recursive: true });
+        }
+        cb(null, uploadPath);
+      },
+      filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, 'expense-' + uniqueSuffix + extname(file.originalname));
+      },
+    }),
+  }))
+  async create(
+    @Request() req,
+    @Body() createExpenseDto: CreateExpenseDto,
+    @UploadedFile() file?: File
+  ) {
     // Get user's primary location from database
-    const user = await this.employeeExpensesService.getUserById(req.user.sub);
+    const user = await this.employeeExpensesService.getUserById(req.user.id);
     const locationId = user?.primaryLocationId || 1;
-    return this.employeeExpensesService.create(req.user.id, createExpenseDto, locationId);
+
+    // Use the uploaded filename if available with proper path prefix
+    const receiptFilename = file ? `uploads/expenses/${file.filename}` : createExpenseDto.receipt;
+
+    return this.employeeExpensesService.create(
+      req.user.id,
+      { ...createExpenseDto, receipt: receiptFilename },
+      locationId
+    );
   }
 
   @UseGuards(JwtAuthGuard)

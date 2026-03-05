@@ -153,6 +153,9 @@ import { CashCollectionsService } from './services/cash-collections.service';
 import { ExpenseCategory } from './entities/expense-category.entity';
 import { EmployeeExpense } from './entities/employee-expense.entity';
 import { Holiday } from './entities/holiday.entity';
+import { HRPolicy } from './entities/hr-policy.entity';
+import { HRPoliciesController } from './controllers/hr-policies.controller';
+import { HRPoliciesService } from './services/hr-policies.service';
 
 
 @Module({
@@ -205,6 +208,7 @@ import { Holiday } from './entities/holiday.entity';
       EmployeeExpense,
       Holiday,
       UserSalaryDetails,
+      HRPolicy,
     ]),
   ],
   controllers: [
@@ -263,7 +267,8 @@ import { Holiday } from './entities/holiday.entity';
     LocationsIpController,
     HolidaysController,
     UserSalaryController,
-    SalaryCalculationController
+    SalaryCalculationController,
+    HRPoliciesController,
   ],
   providers: [
     AuthService,
@@ -317,7 +322,8 @@ import { Holiday } from './entities/holiday.entity';
     LocationsIpService,
     HolidaysService,
     UserSalaryService,
-    SalaryCalculationService
+    SalaryCalculationService,
+    HRPoliciesService,
   ],
 })
-export class AppModule {}
+export class AppModule { }

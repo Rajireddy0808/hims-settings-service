@@ -91,7 +91,7 @@ export class PatientListService {
   }
 
   async getPatientById(patientId: string, locationId: number, userId?: string) {
-    // Validate user access - only allow access to patients in user's location
+    // Validate user authentication
     if (!userId) {
       throw new Error('User authentication required');
     }
@@ -100,14 +100,14 @@ export class PatientListService {
     const numericId = parseInt(patientId);
     if (!isNaN(numericId)) {
       const patient = await this.patientRepository.findOne({
-        where: { id: numericId, location_id: locationId }
+        where: { id: numericId }
       });
       if (patient) return patient;
     }
 
     // If not found or not numeric, try to find by patient_id
     return this.patientRepository.findOne({
-      where: { patient_id: patientId, location_id: locationId }
+      where: { patient_id: patientId }
     });
   }
 

@@ -10,7 +10,7 @@ export class DatabaseConfig implements TypeOrmOptionsFactory {
       port: parseInt(process.env.DB_PORT) || 5432,
       username: process.env.DB_USERNAME || 'postgres',
       password: process.env.DB_PASSWORD || 'password',
-      database: process.env.DB_NAME || 'hims_user_settings',
+      database: process.env.DB_NAME || 'postgres',
       entities: [__dirname + '/../**/*.entity{.ts,.js}'],
       migrations: [__dirname + '/../migrations/*{.ts,.js}'],
       migrationsRun: true,
@@ -19,7 +19,7 @@ export class DatabaseConfig implements TypeOrmOptionsFactory {
       logging: true,
       retryAttempts: 3,
       retryDelay: 3000,
-      ssl: {
+      ssl: process.env.DB_HOST === '127.0.0.1' || process.env.DB_HOST === 'localhost' ? false : {
         rejectUnauthorized: false,
       },
       extra: {

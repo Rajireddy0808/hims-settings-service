@@ -1210,18 +1210,43 @@ export class MedicalHistoryService {
 
   async savePatientMedicalHistory(data: any, user: any) {
     try {
+      const { patient_id, medical_history_id, medical_history_option_id, category_title, option_title, notes } = data;
 
+      // Add notes column if it doesn't exist
+      await this.pool.query(`
+        ALTER TABLE patient_medical_history 
+        ADD COLUMN IF NOT EXISTS notes TEXT
+      `);
 
+      const numericPatientId = parseInt(patient_id);
 
-      const { patient_id, medical_history_id, medical_history_option_id, category_title, option_title } = data;
+      // If only notes are being saved
+      if (notes !== undefined && !medical_history_id && !medical_history_option_id) {
+        const updateResult = await this.pool.query(
+          'UPDATE patient_medical_history SET notes = $1 WHERE patient_id = $2',
+          [notes, numericPatientId]
+        );
 
-      // Validate required fields
+        if (updateResult.rowCount === 0) {
+          const userId = user?.sub || user?.id || user?.userId;
+          const location_id = await this.getUserLocationId(userId);
+
+          await this.pool.query(
+            `INSERT INTO patient_medical_history 
+             (patient_id, medical_history_id, medical_history_option_id, category_title, option_title, notes) 
+             VALUES ($1, $2, $3, $4, $5, $6)`,
+            [numericPatientId, 1, 0, 'General Notes', 'Notes Placeholder', notes]
+          );
+        }
+        return { success: true };
+      }
+
+      // Validate required fields for normal selection save
       if (!patient_id || !medical_history_id || !medical_history_option_id) {
         throw new Error(`Missing required fields: patient_id=${patient_id}, medical_history_id=${medical_history_id}, medical_history_option_id=${medical_history_option_id}`);
       }
 
       // Use patient_id directly as numeric ID
-      const numericPatientId = parseInt(patient_id);
 
       // Get numeric medical_history_id from title string
       let numericMedicalHistoryId = medical_history_id;
@@ -1253,16 +1278,25 @@ export class MedicalHistoryService {
       );
 
       if (existingRecord.rows.length > 0) {
-
         return { message: 'Record already exists' };
       }
 
+      // Propagate existing notes if not provided in request
+      let finalNotes = notes;
+      if (finalNotes === undefined || finalNotes === null || finalNotes === '') {
+        const existingNoteResult = await this.pool.query(
+          'SELECT notes FROM patient_medical_history WHERE patient_id = $1 AND notes IS NOT NULL AND notes != \'\' LIMIT 1',
+          [numericPatientId]
+        );
+        if (existingNoteResult.rows.length > 0) {
+          finalNotes = existingNoteResult.rows[0].notes;
+        }
+      }
+
       // Insert new record
-
-
       const result = await this.pool.query(
-        'INSERT INTO patient_medical_history (patient_id, medical_history_id, medical_history_option_id, category_title, option_title) VALUES ($1, $2, $3, $4, $5) RETURNING id',
-        [numericPatientId, numericMedicalHistoryId, medical_history_option_id, category_title, option_title]
+        'INSERT INTO patient_medical_history (patient_id, medical_history_id, medical_history_option_id, category_title, option_title, notes) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
+        [numericPatientId, numericMedicalHistoryId, medical_history_option_id, category_title, option_title, finalNotes]
       );
 
 
@@ -1279,6 +1313,12 @@ export class MedicalHistoryService {
     try {
       const numericPatientId = parseInt(patientId);
       const location_id = user?.primary_location_id || user?.location_id || 1;
+
+      // Add notes column if it doesn't exist
+      await this.pool.query(`
+        ALTER TABLE patient_medical_history 
+        ADD COLUMN IF NOT EXISTS notes TEXT
+      `);
 
       const result = await this.pool.query(
         `SELECT pmh.*, 
@@ -1305,7 +1345,10 @@ export class MedicalHistoryService {
         return acc;
       }, {});
 
-      return groupedHistory;
+      return {
+        data: groupedHistory,
+        notes: result.rows.find(row => row.notes)?.notes || ''
+      };
     } catch (error) {
       console.error('Error getting patient medical history:', error);
       throw new Error('Failed to fetch patient medical history');
