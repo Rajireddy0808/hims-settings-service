@@ -82,15 +82,20 @@ export class QueueService {
 
         // Determine queue status - map DB statuses to queue statuses
         const rawStatus = (apt.status || '').toLowerCase();
-        let status = 'waiting'; // default
+        let status = rawStatus || 'scheduled'; // default
+
         if (rawStatus === 'with_doctor' || rawStatus === 'in_progress') {
           status = 'with_doctor';
         } else if (rawStatus === 'completed' || rawStatus === 'done') {
           status = 'completed';
         } else if (rawStatus === 'cancelled' || rawStatus === 'no_show') {
           status = rawStatus;
+        } else if (rawStatus === 'scheduled' || rawStatus === 'confirmed') {
+          status = rawStatus;
+        } else if (rawStatus === 'waiting' || rawStatus === 'pending') {
+          status = 'waiting';
         }
-        // All others (scheduled, pending, waiting, empty) => waiting
+        // If it's something totally unknown, it keeps its rawStatus or defaults to 'scheduled' above
 
         doctorMap[doctorKey].patients.push({
           id: apt.id,
