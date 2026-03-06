@@ -66,58 +66,47 @@ export class QueueService {
       // Group by doctor
       const doctorMap: Record<string, any> = {};
 
-      appointments.forEach((apt: any, index: number) => {
+      appointments.forEach((apt: any) => {
         const doctorKey = apt.doctor_id;
-        const doctorName = `${apt.doctor_first_name || ''} ${apt.doctor_last_name || ''}`.trim() || `Doctor #${apt.doctor_id}`;
+        const doctorName = `${apt.doctor_first_name || ''} ${apt.doctor_last_name || ''}`.trim();
 
         if (!doctorMap[doctorKey]) {
           doctorMap[doctorKey] = {
             doctorId: apt.doctor_id,
             doctorName: doctorName,
             locationId: apt.location_id,
-            locationName: apt.location_name || 'General',
+            locationName: apt.location_name,
             patients: [],
           };
         }
-
-        // Determine queue status - map DB statuses to queue statuses
-        const rawStatus = (apt.status || '').toLowerCase();
-        let status = rawStatus || 'scheduled'; // default
-
-        if (rawStatus === 'with_doctor' || rawStatus === 'in_progress') {
-          status = 'with_doctor';
-        } else if (rawStatus === 'completed' || rawStatus === 'done') {
-          status = 'completed';
-        } else if (rawStatus === 'cancelled' || rawStatus === 'no_show') {
-          status = rawStatus;
-        } else if (rawStatus === 'scheduled' || rawStatus === 'confirmed') {
-          status = rawStatus;
-        } else if (rawStatus === 'waiting' || rawStatus === 'pending') {
-          status = 'waiting';
-        }
-        // If it's something totally unknown, it keeps its rawStatus or defaults to 'scheduled' above
 
         doctorMap[doctorKey].patients.push({
           id: apt.id,
           appointmentId: apt.appointment_id,
           patientId: apt.patient_id,
-          patientRegId: apt.patient_reg_id || `P${apt.patient_id}`,
-          patientName: `${apt.patient_first_name || ''} ${apt.patient_last_name || ''}`.trim() || `Patient #${apt.patient_id}`,
-          patientPhone: apt.patient_phone || 'N/A',
+          patientRegId: apt.patient_reg_id,
+          patientName: `${apt.patient_first_name || ''} ${apt.patient_last_name || ''}`.trim(),
+          patientPhone: apt.patient_phone,
           appointmentTime: apt.appointment_time,
-          appointmentType: apt.appointment_type_code || apt.appointment_type || 'consultation',
-          typeName: apt.appointment_type_name || 'Consultation',
-          status: status,
+          appointmentType: apt.appointment_type_code || apt.appointment_type,
+          typeName: apt.appointment_type_name,
+          status: apt.status,
           notes: apt.notes,
           queuePosition: doctorMap[doctorKey].patients.length + 1,
         });
       });
 
-      // Convert map to array and compute current/waiting counts
+      // Convert map to array and compute current/waiting counts dynamically
       const doctors = Object.values(doctorMap).map((doc: any) => {
-        const currentPatient = doc.patients.find((p: any) => p.status === 'with_doctor');
-        const waitingPatients = doc.patients.filter((p: any) => p.status === 'waiting');
-        const completedPatients = doc.patients.filter((p: any) => p.status === 'completed');
+        const currentPatient = doc.patients.find((p: any) =>
+          ['with_doctor', 'in_progress'].includes((p.status || '').toLowerCase())
+        );
+        const waitingPatients = doc.patients.filter((p: any) =>
+          ['waiting', 'pending', 'confirmed', 'scheduled'].includes((p.status || '').toLowerCase())
+        );
+        const completedPatients = doc.patients.filter((p: any) =>
+          ['completed', 'done', 'checked_out'].includes((p.status || '').toLowerCase())
+        );
 
         return {
           ...doc,
@@ -142,11 +131,7 @@ export class QueueService {
 
   async updateAppointmentStatus(appointmentId: string, status: string) {
     try {
-      const validStatuses = ['waiting', 'with_doctor', 'completed', 'cancelled', 'no_show'];
-      if (!validStatuses.includes(status)) {
-        throw new Error(`Invalid status. Must be one of: ${validStatuses.join(', ')}`);
-      }
-
+      // Allow any status to be passed dynamically to the database
       await this.dataSource.query(
         `UPDATE appointments SET status = $1 WHERE appointment_id = $2`,
         [status, appointmentId]
@@ -154,8 +139,7 @@ export class QueueService {
 
       // Get location_id to emit targeted update
       const appointmentLocations = await this.dataSource.query(
-        `SELECT p.location_id FROM appointments a
-         JOIN patients p ON a.patient_id = p.id
+        `SELECT a.location_id FROM appointments a
          WHERE a.appointment_id = $1`,
         [appointmentId]
       );
