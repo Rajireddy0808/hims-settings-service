@@ -12,7 +12,7 @@ export class AppointmentController {
   constructor(
     private readonly appointmentService: AppointmentService,
     private readonly userLocationService: UserLocationService
-  ) {}
+  ) { }
 
   @Get()
   @ApiOperation({ summary: 'Get all appointments' })
@@ -29,11 +29,11 @@ export class AppointmentController {
   ) {
     // Always use the current location_id from query (current location user is in)
     const locationId = queryLocationId ? parseInt(queryLocationId) : null;
-    
+
     if (!locationId) {
       return { data: [], total: 0, page, limit, totalPages: 0 };
     }
-    
+
     return this.appointmentService.getAppointments({
       fromDate,
       toDate,
@@ -56,10 +56,12 @@ export class AppointmentController {
     @Query('toDate') toDate?: string
   ) {
     const userId = req.user.sub || req.user.id || req.user.userId;
-    return this.appointmentService.getDoctorAppointmentsWithUserDetails(
-      userId,
-      page,
-      limit,
+    const doctorId = typeof userId === 'string' ? parseInt(userId) : userId;
+
+    return this.appointmentService.getMyDoctorAppointments(
+      doctorId,
+      parseInt(page.toString()),
+      parseInt(limit.toString()),
       fromDate,
       toDate
     );
@@ -92,16 +94,16 @@ export class AppointmentController {
   @ApiOperation({ summary: 'Create new appointment' })
   async createAppointment(@Request() req, @Body() appointmentData: any) {
     const userId = req.user.sub || req.user.id || req.user.userId;
-    
+
     if (!userId) {
       throw new Error('User ID is required');
     }
-    
+
     // Dynamically get user's location ID
     const locationId = await this.userLocationService.getUserLocationId(userId);
-    
 
-    
+
+
     return this.appointmentService.createAppointment(appointmentData, locationId);
   }
 
@@ -114,7 +116,7 @@ export class AppointmentController {
   ) {
     const userId = req.user.sub || req.user.id || req.user.userId;
     const locationId = await this.userLocationService.getUserLocationId(userId);
-    
+
     return this.appointmentService.updateNextCallDate(
       parseInt(patientId),
       updateData.nextCallDate,

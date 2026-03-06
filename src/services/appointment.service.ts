@@ -154,6 +154,100 @@ export class AppointmentService {
     }
   }
 
+  async getMyDoctorAppointments(doctorId: number, page: number = 1, limit: number = 50, fromDate?: string, toDate?: string) {
+    try {
+      const params: any[] = [doctorId];
+      let paramIndex = 2;
+      let whereClause = `WHERE a.doctor_id = $1`;
+
+      if (fromDate) {
+        whereClause += ` AND a.appointment_date >= $${paramIndex}`;
+        params.push(fromDate);
+        paramIndex++;
+      }
+
+      if (toDate) {
+        whereClause += ` AND a.appointment_date <= $${paramIndex}`;
+        params.push(toDate);
+        paramIndex++;
+      }
+
+      const appointments = await this.dataSource.query(`
+        SELECT 
+          a.appointment_id,
+          a.patient_id,
+          a.doctor_id,
+          a.appointment_date,
+          a.appointment_time,
+          a.appointment_type,
+          a.appointment_type_id,
+          a.status,
+          a.notes,
+          a.created_at,
+          a.created_by,
+          p.first_name as patient_first_name,
+          p.last_name as patient_last_name,
+          p.mobile as patient_phone,
+          d.first_name as doctor_first_name,
+          d.last_name as doctor_last_name,
+          c.first_name as creator_first_name,
+          c.last_name as creator_last_name,
+          at.name as appointment_type_name,
+          at.code as appointment_type_code
+        FROM appointments a
+        LEFT JOIN patients p ON p.id = a.patient_id
+        LEFT JOIN users d ON d.id = a.doctor_id
+        LEFT JOIN users c ON c.id = a.created_by
+        LEFT JOIN appointment_types at ON at.id = a.appointment_type_id
+        ${whereClause}
+        ORDER BY a.appointment_date DESC, a.appointment_time DESC
+        LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+      `, [...params, limit, (page - 1) * limit]);
+
+      const countResult = await this.dataSource.query(`
+        SELECT COUNT(*) as total
+        FROM appointments a
+        ${whereClause}
+      `, params);
+
+      const total = parseInt(countResult[0].total);
+      const totalPages = Math.ceil(total / limit);
+
+      return {
+        data: appointments.map(appointment => ({
+          id: appointment.appointment_id,
+          patientId: appointment.patient_id,
+          patientName: `${appointment.patient_first_name || ''} ${appointment.patient_last_name || ''}`.trim() || `Patient #${appointment.patient_id}`,
+          patientPhone: appointment.patient_phone || 'N/A',
+          createdBy: `${appointment.creator_first_name || ''} ${appointment.creator_last_name || ''}`.trim() || 'System',
+          doctorId: appointment.doctor_id,
+          doctorName: `${appointment.doctor_first_name || ''} ${appointment.doctor_last_name || ''}`.trim() || `Doctor #${appointment.doctor_id}`,
+          appointmentDate: appointment.appointment_date,
+          appointmentTime: appointment.appointment_time,
+          type: appointment.appointment_type_code || appointment.appointment_type || 'consultation',
+          typeName: appointment.appointment_type_name || 'Consultation',
+          status: appointment.status || 'pending',
+          notes: appointment.notes,
+          createdAt: appointment.created_at
+        })),
+        total,
+        page,
+        limit,
+        totalPages,
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('Error in getMyDoctorAppointments:', error);
+      return {
+        data: [],
+        total: 0,
+        page: 1,
+        limit: 50,
+        totalPages: 0
+      };
+    }
+  }
+
   async getPatientAppointments(patientId: number, locationId?: number) {
     const queryBuilder = this.appointmentRepository
       .createQueryBuilder('appointment')
