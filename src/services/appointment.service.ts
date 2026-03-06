@@ -118,6 +118,32 @@ export class AppointmentService {
       const total = parseInt(countResult[0].total);
       const totalPages = Math.ceil(total / filters.limit);
 
+      // Get stats grouped by status for these filters
+      const statsResult = await this.dataSource.query(`
+        SELECT a.status, COUNT(*) as count
+        FROM appointments a
+        LEFT JOIN patients p ON p.id = a.patient_id
+        LEFT JOIN users d ON d.id = a.doctor_id
+        ${whereClause}
+        GROUP BY a.status
+      `, params)
+
+      let waitingCount = 0;
+      let withDoctorCount = 0;
+      let completedCount = 0;
+
+      statsResult.forEach(row => {
+        const count = parseInt(row.count);
+        const status = (row.status || '').toLowerCase();
+        if (['waiting', 'scheduled', 'pending'].includes(status)) {
+          waitingCount += count;
+        } else if (['with_doctor', 'in_progress'].includes(status)) {
+          withDoctorCount += count;
+        } else if (['completed', 'done'].includes(status)) {
+          completedCount += count;
+        }
+      });
+
       return {
         data: appointments.map(appointment => ({
           id: appointment.appointment_id,
@@ -140,6 +166,12 @@ export class AppointmentService {
         page: filters.page,
         limit: filters.limit,
         totalPages: totalPages,
+        stats: {
+          total: total,
+          waiting: waitingCount,
+          withDoctor: withDoctorCount,
+          completed: completedCount
+        },
         timestamp: new Date().toISOString()
       };
     } catch (error) {
