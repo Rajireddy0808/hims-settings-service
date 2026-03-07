@@ -48,7 +48,7 @@ export class AppointmentService {
         paramIndex++;
       }
 
-      if (doctorId) {
+      if (doctorId && !isNaN(doctorId)) {
         whereClause += ` AND a.doctor_id = $${paramIndex}`;
         params.push(doctorId);
         paramIndex++;
@@ -65,6 +65,10 @@ export class AppointmentService {
         params.push(`%${search}%`);
         paramIndex++;
       }
+
+      const limit = isNaN(filters.limit) ? 50 : filters.limit;
+      const page = isNaN(filters.page) ? 1 : filters.page;
+      const offset = (page - 1) * limit;
 
       const appointments = await this.dataSource.query(`
         SELECT 
@@ -104,7 +108,7 @@ export class AppointmentService {
         ${whereClause}
         ORDER BY a.appointment_date DESC, a.appointment_time DESC
         LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
-      `, [...params, filters.limit, (filters.page - 1) * filters.limit]);
+      `, [...params, limit, offset]);
 
       // Get total count using the same filters
       const countResult = await this.dataSource.query(`
@@ -116,7 +120,8 @@ export class AppointmentService {
       `, params);
 
       const total = parseInt(countResult[0].total);
-      const totalPages = Math.ceil(total / filters.limit);
+      const limitVal = isNaN(filters.limit) ? 50 : filters.limit;
+      const totalPages = Math.ceil(total / limitVal);
 
       // Get stats grouped by status for these filters
       const statsResult = await this.dataSource.query(`
@@ -204,6 +209,10 @@ export class AppointmentService {
         paramIndex++;
       }
 
+      const limitVal = isNaN(limit) ? 50 : limit;
+      const pageVal = isNaN(page) ? 1 : page;
+      const offset = (pageVal - 1) * limitVal;
+
       const appointments = await this.dataSource.query(`
         SELECT 
           a.appointment_id,
@@ -234,7 +243,7 @@ export class AppointmentService {
         ${whereClause}
         ORDER BY a.appointment_date DESC, a.appointment_time DESC
         LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
-      `, [...params, limit, (page - 1) * limit]);
+      `, [...params, limitVal, offset]);
 
       const countResult = await this.dataSource.query(`
         SELECT COUNT(*) as total
@@ -243,7 +252,7 @@ export class AppointmentService {
       `, params);
 
       const total = parseInt(countResult[0].total);
-      const totalPages = Math.ceil(total / limit);
+      const totalPages = Math.ceil(total / limitVal);
 
       return {
         data: appointments.map(appointment => ({
@@ -492,8 +501,12 @@ export class AppointmentService {
         paramIndex++;
       }
 
+      const limitVal = isNaN(limit) ? 50 : limit;
+      const pageVal = isNaN(page) ? 1 : page;
+      const offset = (pageVal - 1) * limitVal;
+
       query += ` ORDER BY a.appointment_date DESC, a.appointment_time DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
-      params.push(limit, (page - 1) * limit);
+      params.push(limitVal, offset);
 
       const appointments = await this.dataSource.query(query, params);
 
@@ -535,9 +548,9 @@ export class AppointmentService {
           createdAt: apt.created_at
         })),
         total,
-        page,
-        limit,
-        totalPages
+        page: pageVal,
+        limit: limitVal,
+        totalPages: Math.ceil(total / limitVal)
       };
     } catch (error) {
       console.error('Error fetching doctor appointments:', error);

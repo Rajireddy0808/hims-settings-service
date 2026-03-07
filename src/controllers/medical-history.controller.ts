@@ -11,8 +11,8 @@ export class MedicalHistoryController {
   constructor(private readonly medicalHistoryService: MedicalHistoryService) { }
 
   @Get('medical-history')
-  async getMedicalHistory(@Query('location_id') locationId?: string) {
-    return this.medicalHistoryService.getMedicalHistory(locationId ? parseInt(locationId) : undefined);
+  async getMedicalHistory() {
+    return this.medicalHistoryService.getMedicalHistory();
   }
 
   @Post('medical-history')
@@ -23,6 +23,11 @@ export class MedicalHistoryController {
   @Put('medical-history/:id')
   async updateMedicalHistory(@Param('id') id: number, @Body() data: any) {
     return this.medicalHistoryService.updateMedicalHistory(id, data);
+  }
+
+  @Delete('medical-history/:id')
+  async deleteMedicalHistory(@Param('id') id: number) {
+    return this.medicalHistoryService.deleteMedicalHistory(id);
   }
 
 
@@ -42,6 +47,11 @@ export class MedicalHistoryController {
     return this.medicalHistoryService.updateMedicalHistoryOption(id, data);
   }
 
+  @Delete('medical-history-options/:id')
+  async deleteMedicalHistoryOption(@Param('id') id: number) {
+    return this.medicalHistoryService.deleteMedicalHistoryOption(id);
+  }
+
   @Get('medical-history-options')
   async getAllMedicalHistoryOptions() {
     return this.medicalHistoryService.getAllMedicalHistoryOptions();
@@ -49,8 +59,8 @@ export class MedicalHistoryController {
 
   @Get('personal-history')
   @ApiOperation({ summary: 'Get all personal history' })
-  async getPersonalHistory(@Query('location_id') locationId?: string) {
-    return this.medicalHistoryService.getPersonalHistory(locationId ? parseInt(locationId) : undefined);
+  async getPersonalHistory() {
+    return this.medicalHistoryService.getPersonalHistory();
   }
 
   @Post('personal-history')
@@ -63,6 +73,12 @@ export class MedicalHistoryController {
   @ApiOperation({ summary: 'Update personal history' })
   async updatePersonalHistory(@Param('id') id: number, @Body() data: any) {
     return this.medicalHistoryService.updatePersonalHistory(id, data);
+  }
+
+  @Delete('personal-history/:id')
+  @ApiOperation({ summary: 'Delete personal history' })
+  async deletePersonalHistory(@Param('id') id: number) {
+    return this.medicalHistoryService.deletePersonalHistory(id);
   }
 
   @Get('personal-history-options/:id')
@@ -83,6 +99,12 @@ export class MedicalHistoryController {
     return this.medicalHistoryService.updatePersonalHistoryOption(id, data);
   }
 
+  @Delete('personal-history-options/:id')
+  @ApiOperation({ summary: 'Delete personal history option' })
+  async deletePersonalHistoryOption(@Param('id') id: number) {
+    return this.medicalHistoryService.deletePersonalHistoryOption(id);
+  }
+
   @Get('personal-history-options')
   @ApiOperation({ summary: 'Get all personal history options' })
   async getAllPersonalHistoryOptions() {
@@ -91,8 +113,8 @@ export class MedicalHistoryController {
 
   @Get('lifestyle')
   @ApiOperation({ summary: 'Get all lifestyle' })
-  async getLifestyle(@Query('location_id') locationId?: string) {
-    return this.medicalHistoryService.getLifestyle(locationId ? parseInt(locationId) : undefined);
+  async getLifestyle() {
+    return this.medicalHistoryService.getLifestyle();
   }
 
   @Post('lifestyle')
@@ -105,6 +127,12 @@ export class MedicalHistoryController {
   @ApiOperation({ summary: 'Update lifestyle' })
   async updateLifestyle(@Param('id') id: number, @Body() data: any) {
     return this.medicalHistoryService.updateLifestyle(id, data);
+  }
+
+  @Delete('lifestyle/:id')
+  @ApiOperation({ summary: 'Delete lifestyle' })
+  async deleteLifestyle(@Param('id') id: number) {
+    return this.medicalHistoryService.deleteLifestyle(id);
   }
 
   @Get('lifestyle-options/:id')
@@ -125,6 +153,12 @@ export class MedicalHistoryController {
     return this.medicalHistoryService.updateLifestyleOption(id, data);
   }
 
+  @Delete('lifestyle-options/:id')
+  @ApiOperation({ summary: 'Delete lifestyle option' })
+  async deleteLifestyleOption(@Param('id') id: number) {
+    return this.medicalHistoryService.deleteLifestyleOption(id);
+  }
+
   @Get('lifestyle-options')
   @ApiOperation({ summary: 'Get all lifestyle options' })
   async getAllLifestyleOptions() {
@@ -133,8 +167,8 @@ export class MedicalHistoryController {
 
   @Get('family-history')
   @ApiOperation({ summary: 'Get all family history' })
-  async getFamilyHistory(@Query('location_id') locationId?: string) {
-    return this.medicalHistoryService.getFamilyHistory(locationId ? parseInt(locationId) : undefined);
+  async getFamilyHistory() {
+    return this.medicalHistoryService.getFamilyHistory();
   }
 
   @Post('family-history')
@@ -147,6 +181,12 @@ export class MedicalHistoryController {
   @ApiOperation({ summary: 'Update family history' })
   async updateFamilyHistory(@Param('id') id: number, @Body() data: any) {
     return this.medicalHistoryService.updateFamilyHistory(id, data);
+  }
+
+  @Delete('family-history/:id')
+  @ApiOperation({ summary: 'Delete family history' })
+  async deleteFamilyHistory(@Param('id') id: number) {
+    return this.medicalHistoryService.deleteFamilyHistory(id);
   }
 
   @Get('family-history-options/:id')
@@ -167,6 +207,12 @@ export class MedicalHistoryController {
     return this.medicalHistoryService.updateFamilyHistoryOption(id, data);
   }
 
+  @Delete('family-history-options/:id')
+  @ApiOperation({ summary: 'Delete family history option' })
+  async deleteFamilyHistoryOption(@Param('id') id: number) {
+    return this.medicalHistoryService.deleteFamilyHistoryOption(id);
+  }
+
   @Get('family-history-options')
   @ApiOperation({ summary: 'Get all family history options' })
   async getAllFamilyHistoryOptions() {
@@ -175,8 +221,8 @@ export class MedicalHistoryController {
 
   @Get('drug-history')
   @ApiOperation({ summary: 'Get all drug history' })
-  async getDrugHistory(@Query('location_id') locationId?: string) {
-    return this.medicalHistoryService.getDrugHistory(locationId ? parseInt(locationId) : undefined);
+  async getDrugHistory() {
+    return this.medicalHistoryService.getDrugHistory();
   }
 
   @Post('drug-history')
@@ -189,6 +235,12 @@ export class MedicalHistoryController {
   @ApiOperation({ summary: 'Update drug history' })
   async updateDrugHistory(@Param('id') id: number, @Body() data: any) {
     return this.medicalHistoryService.updateDrugHistory(id, data);
+  }
+
+  @Delete('drug-history/:id')
+  @ApiOperation({ summary: 'Delete drug history' })
+  async deleteDrugHistory(@Param('id') id: number) {
+    return this.medicalHistoryService.deleteDrugHistory(id);
   }
 
   @Get('drug-history-options/:id')
@@ -209,6 +261,12 @@ export class MedicalHistoryController {
     return this.medicalHistoryService.updateDrugHistoryOption(id, data);
   }
 
+  @Delete('drug-history-options/:id')
+  @ApiOperation({ summary: 'Delete drug history option' })
+  async deleteDrugHistoryOption(@Param('id') id: number) {
+    return this.medicalHistoryService.deleteDrugHistoryOption(id);
+  }
+
   @Get('drug-history-options')
   @ApiOperation({ summary: 'Get all drug history options' })
   async getAllDrugHistoryOptions() {
@@ -217,8 +275,8 @@ export class MedicalHistoryController {
 
   @Get('allergies')
   @ApiOperation({ summary: 'Get all allergies' })
-  async getAllergies(@Query('location_id') locationId?: string) {
-    return this.medicalHistoryService.getAllergies(locationId ? parseInt(locationId) : undefined);
+  async getAllergies() {
+    return this.medicalHistoryService.getAllergies();
   }
 
   @Post('allergies')
@@ -231,6 +289,12 @@ export class MedicalHistoryController {
   @ApiOperation({ summary: 'Update allergy' })
   async updateAllergy(@Param('id') id: number, @Body() data: any) {
     return this.medicalHistoryService.updateAllergy(id, data);
+  }
+
+  @Delete('allergies/:id')
+  @ApiOperation({ summary: 'Delete allergy' })
+  async deleteAllergy(@Param('id') id: number) {
+    return this.medicalHistoryService.deleteAllergy(id);
   }
 
   @Get('allergies-options/:id')
@@ -251,6 +315,12 @@ export class MedicalHistoryController {
     return this.medicalHistoryService.updateAllergyOption(id, data);
   }
 
+  @Delete('allergies-options/:id')
+  @ApiOperation({ summary: 'Delete allergy option' })
+  async deleteAllergyOption(@Param('id') id: number) {
+    return this.medicalHistoryService.deleteAllergyOption(id);
+  }
+
   @Get('allergies-options')
   @ApiOperation({ summary: 'Get all allergy options' })
   async getAllAllergiesOptions() {
@@ -259,8 +329,8 @@ export class MedicalHistoryController {
 
   @Get('social-history')
   @ApiOperation({ summary: 'Get all social history' })
-  async getSocialHistory(@Query('location_id') locationId?: string) {
-    return this.medicalHistoryService.getSocialHistory(locationId ? parseInt(locationId) : undefined);
+  async getSocialHistory() {
+    return this.medicalHistoryService.getSocialHistory();
   }
 
   @Post('social-history')
@@ -273,6 +343,12 @@ export class MedicalHistoryController {
   @ApiOperation({ summary: 'Update social history' })
   async updateSocialHistory(@Param('id') id: number, @Body() data: any) {
     return this.medicalHistoryService.updateSocialHistory(id, data);
+  }
+
+  @Delete('social-history/:id')
+  @ApiOperation({ summary: 'Delete social history' })
+  async deleteSocialHistory(@Param('id') id: number) {
+    return this.medicalHistoryService.deleteSocialHistory(id);
   }
 
   @Get('social-history-options/:id')
@@ -293,6 +369,12 @@ export class MedicalHistoryController {
     return this.medicalHistoryService.updateSocialHistoryOption(id, data);
   }
 
+  @Delete('social-history-options/:id')
+  @ApiOperation({ summary: 'Delete social history option' })
+  async deleteSocialHistoryOption(@Param('id') id: number) {
+    return this.medicalHistoryService.deleteSocialHistoryOption(id);
+  }
+
   @Get('social-history-options')
   @ApiOperation({ summary: 'Get all social history options' })
   async getAllSocialHistoryOptions() {
@@ -301,8 +383,8 @@ export class MedicalHistoryController {
 
   @Get('medication-type')
   @ApiOperation({ summary: 'Get all medication types' })
-  async getMedicationType(@Query('location_id') locationId?: string) {
-    return this.medicalHistoryService.getMedicationType(locationId ? parseInt(locationId) : undefined);
+  async getMedicationType() {
+    return this.medicalHistoryService.getMedicationType();
   }
 
   @Post('medication-type')
@@ -317,10 +399,16 @@ export class MedicalHistoryController {
     return this.medicalHistoryService.updateMedicationType(id, data);
   }
 
+  @Delete('medication-type/:id')
+  @ApiOperation({ summary: 'Delete medication type' })
+  async deleteMedicationType(@Param('id') id: number) {
+    return this.medicalHistoryService.deleteMedicationType(id);
+  }
+
   @Get('medicine')
   @ApiOperation({ summary: 'Get all medicine' })
-  async getMedicine(@Query('location_id') locationId?: string) {
-    return this.medicalHistoryService.getMedicine(locationId ? parseInt(locationId) : undefined);
+  async getMedicine() {
+    return this.medicalHistoryService.getMedicine();
   }
 
   @Post('medicine')
@@ -335,10 +423,16 @@ export class MedicalHistoryController {
     return this.medicalHistoryService.updateMedicine(id, data);
   }
 
+  @Delete('medicine/:id')
+  @ApiOperation({ summary: 'Delete medicine' })
+  async deleteMedicine(@Param('id') id: number) {
+    return this.medicalHistoryService.deleteMedicine(id);
+  }
+
   @Get('potency')
   @ApiOperation({ summary: 'Get all potency' })
-  async getPotency(@Query('location_id') locationId?: string) {
-    return this.medicalHistoryService.getPotency(locationId ? parseInt(locationId) : undefined);
+  async getPotency() {
+    return this.medicalHistoryService.getPotency();
   }
 
   @Post('potency')
@@ -353,10 +447,16 @@ export class MedicalHistoryController {
     return this.medicalHistoryService.updatePotency(id, data);
   }
 
+  @Delete('potency/:id')
+  @ApiOperation({ summary: 'Delete potency' })
+  async deletePotency(@Param('id') id: number) {
+    return this.medicalHistoryService.deletePotency(id);
+  }
+
   @Get('dosage')
   @ApiOperation({ summary: 'Get all dosage' })
-  async getDosage(@Query('location_id') locationId?: string) {
-    return this.medicalHistoryService.getDosage(locationId ? parseInt(locationId) : undefined);
+  async getDosage() {
+    return this.medicalHistoryService.getDosage();
   }
 
   @Post('dosage')
@@ -371,10 +471,16 @@ export class MedicalHistoryController {
     return this.medicalHistoryService.updateDosage(id, data);
   }
 
+  @Delete('dosage/:id')
+  @ApiOperation({ summary: 'Delete dosage' })
+  async deleteDosage(@Param('id') id: number) {
+    return this.medicalHistoryService.deleteDosage(id);
+  }
+
   @Get('pharmacy/prescriptions')
   @ApiOperation({ summary: 'Get pharmacy prescriptions with patient and medicine details' })
-  async getPharmacyPrescriptions(@Query('location_id') locationId?: string) {
-    return this.medicalHistoryService.getPharmacyPrescriptions(locationId ? parseInt(locationId) : undefined);
+  async getPharmacyPrescriptions() {
+    return this.medicalHistoryService.getPharmacyPrescriptions();
   }
 
   @Put('pharmacy/prescriptions/:id/status')
@@ -386,14 +492,13 @@ export class MedicalHistoryController {
   @Get('patient-examinations')
   @ApiOperation({ summary: 'Get patient examinations with patient details' })
   async getPatientExaminations(
-    @Query('location_id') locationId?: string,
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
     @Query('from_date') fromDate?: string,
     @Query('to_date') toDate?: string,
     @Query('search') search?: string
   ) {
-    return this.medicalHistoryService.getPatientExaminations(locationId ? parseInt(locationId) : undefined, parseInt(page), parseInt(limit), fromDate, toDate, search);
+    return this.medicalHistoryService.getPatientExaminations(undefined, parseInt(page), parseInt(limit), fromDate, toDate, search);
   }
 
   @Get('patient-medical-history/:patientId')

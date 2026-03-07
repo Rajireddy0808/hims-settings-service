@@ -15,10 +15,6 @@ export class AllergiesController {
     return this.allergiesService.getAllergies();
   }
 
-  @Get('allergies-options/:id')
-  async getAllergiesOptions(@Param('id') id: string) {
-    return this.allergiesService.getAllergiesOptions(parseInt(id));
-  }
 
   @Get('patient-allergies/:patientId')
   async getPatientAllergies(

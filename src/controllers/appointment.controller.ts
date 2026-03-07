@@ -55,7 +55,7 @@ export class AppointmentController {
     @Query('fromDate') fromDate?: string,
     @Query('toDate') toDate?: string
   ) {
-    const userId = req.user.sub || req.user.id || req.user.userId;
+    const userId = req.user?.sub || req.user?.id || req.user?.userId;
     const doctorId = typeof userId === 'string' ? parseInt(userId) : userId;
 
     return this.appointmentService.getMyDoctorAppointments(
@@ -85,7 +85,7 @@ export class AppointmentController {
   @Get('patient/:patientId')
   @ApiOperation({ summary: 'Get patient appointments' })
   async getPatientAppointments(@Request() req, @Param('patientId') patientId: number) {
-    const userId = req.user.sub || req.user.id || req.user.userId;
+    const userId = req.user?.sub || req.user?.id || req.user?.userId;
     const locationId = userId ? await this.userLocationService.getUserLocationId(userId) : null;
     return this.appointmentService.getPatientAppointments(patientId, locationId);
   }
@@ -93,7 +93,7 @@ export class AppointmentController {
   @Post()
   @ApiOperation({ summary: 'Create new appointment' })
   async createAppointment(@Request() req, @Body() appointmentData: any) {
-    const userId = req.user.sub || req.user.id || req.user.userId;
+    const userId = req.user?.sub || req.user?.id || req.user?.userId;
 
     if (!userId) {
       throw new Error('User ID is required');
@@ -114,7 +114,7 @@ export class AppointmentController {
     @Param('patientId') patientId: string,
     @Body() updateData: { nextCallDate: string }
   ) {
-    const userId = req.user.sub || req.user.id || req.user.userId;
+    const userId = req.user?.sub || req.user?.id || req.user?.userId;
     const locationId = await this.userLocationService.getUserLocationId(userId);
 
     return this.appointmentService.updateNextCallDate(

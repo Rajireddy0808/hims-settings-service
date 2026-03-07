@@ -83,7 +83,7 @@ export class PatientRegistrationController {
   @Get(':id')
   @ApiOperation({ summary: 'Get patient by ID' })
   async getPatientById(@Param('id') patientId: string, @Request() req, @Query('locationId') queryLocationId?: string) {
-    const userId = req.user.sub || req.user.id || req.user.userId;
+    const userId = req.user?.sub || req.user?.id || req.user?.userId;
     const locationId = queryLocationId ? parseInt(queryLocationId) : await this.userLocationService.getUserLocationId(userId);
 
     // Validate user access to patient data

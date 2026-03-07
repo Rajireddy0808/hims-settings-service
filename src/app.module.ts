@@ -101,6 +101,7 @@ import { UserTypesService } from './services/user-types.service';
 import { AppointmentTypeController } from './controllers/appointment-type.controller';
 import { AppointmentTypeService } from './services/appointment-type.service';
 import { MobileCallController } from './controllers/mobile-call.controller';
+import { PresentingComplaintsController } from './controllers/presenting-complaints.controller';
 import { MobileNumbersController } from './controllers/mobile-numbers.controller';
 import { MobileNumbersService } from './services/mobile-numbers.service';
 import { MobileNumber } from './entities/mobile-number.entity';
@@ -111,6 +112,7 @@ import { MobileCallTrackingController } from './controllers/mobile-call-tracking
 import { MobileCallTrackingService } from './services/mobile-call-tracking.service';
 import { RenewalController } from './controllers/renewal.controller';
 import { RenewalService } from './services/renewal.service';
+import { PresentingComplaintsService } from './services/presenting-complaints.service';
 import { BloodGroup } from './entities/blood-group.entity';
 import { Gender } from './entities/gender.entity';
 import { MaritalStatus } from './entities/marital-status.entity';
@@ -259,6 +261,7 @@ import { HRPoliciesService } from './services/hr-policies.service';
     MobileCallTrackingController,
     CallHistoryController,
     RenewalController,
+    PresentingComplaintsController,
     PaymentTypeController,
     ExpenseCategoriesController,
     EmployeeExpensesController,
@@ -314,6 +317,7 @@ import { HRPoliciesService } from './services/hr-policies.service';
     MobileCallTrackingService,
     CallHistoryService,
     RenewalService,
+    PresentingComplaintsService,
     PaymentTypeService,
     ExpenseCategoriesService,
     EmployeeExpensesService,
