@@ -7,19 +7,20 @@ export class PrescriptionService {
   constructor(
     private readonly userLocationService: UserLocationService,
     private dataSource: DataSource
-  ) {}
+  ) { }
 
   async savePatientPrescriptions(data: any, user: any) {
+    console.log('DEBUG: savePatientPrescriptions received:', data);
     try {
-      const { 
-        patient_id, 
-        prescriptions, 
-        medicine_days, 
-        next_appointment_date, 
-        notes_to_pro, 
-        notes_to_pharmacy 
+      const {
+        patient_id,
+        prescriptions,
+        medicine_days,
+        next_appointment_date,
+        notes_to_pro,
+        notes_to_pharmacy
       } = data;
-      
+
       const userId = user?.sub || user?.id || user?.userId;
       const location_id = userId ? await this.userLocationService.getUserLocationId(userId) : 1;
       const created_by = userId;
@@ -31,6 +32,40 @@ export class PrescriptionService {
       // Create tables if they don't exist
       await this.createTablesIfNotExist();
 
+      // Check if it's an update
+      if (data.id && data.medicine_id) {
+        const numericId = parseInt(data.id.toString());
+        const numericMedicineId = parseInt(data.medicine_id.toString());
+        console.log('DEBUG: Updating prescription metadata for ID:', numericId);
+        // Update main prescription metadata
+        await this.dataSource.query(
+          `UPDATE patient_prescriptions 
+           SET medicine_days = $1, next_appointment_date = $2, 
+               notes_to_pro = $3, notes_to_pharmacy = $4
+           WHERE id = $5`,
+          [medicine_days, next_appointment_date, notes_to_pro, notes_to_pharmacy, numericId]
+        );
+
+        // Update medicine details (assuming first one in list is the one being updated)
+        const m = prescriptions[0];
+        if (m) {
+          console.log('DEBUG: Updating medicine detailed for ID:', numericMedicineId);
+          await this.dataSource.query(
+            `UPDATE prescription_medicines 
+             SET medicine_type = $1, medicine = $2, potency = $3, dosage = $4, 
+                 morning = $5, afternoon = $6, night = $7, notes = $8
+             WHERE id = $9`,
+            [
+              m.medicineType, m.medicine, m.potency, m.dosage,
+              m.morning, m.afternoon, m.night, m.notes, numericMedicineId
+            ]
+          );
+        }
+        return { success: true, prescriptionId: numericId, medicineId: numericMedicineId };
+      }
+
+      console.log('DEBUG: Inserting new prescription for patient:', patient_id);
+
       // Insert main prescription record
       const prescriptionResult = await this.dataSource.query(
         `INSERT INTO patient_prescriptions 
@@ -38,11 +73,11 @@ export class PrescriptionService {
           notes_to_pro, notes_to_pharmacy, created_by) 
          VALUES ($1, $2, $3, $4, $5, $6, $7) 
          RETURNING id`,
-        [patient_id, location_id, medicine_days, next_appointment_date, notes_to_pro, notes_to_pharmacy, created_by]
+        [parseInt(patient_id?.toString()), location_id, medicine_days, next_appointment_date, notes_to_pro, notes_to_pharmacy, created_by]
       );
 
       const prescriptionId = prescriptionResult[0].id;
-      
+
       // Insert medicines for this prescription
       const medicineResults = [];
       for (const prescription of prescriptions) {
@@ -119,13 +154,14 @@ export class PrescriptionService {
            WHERE table_name = 'patient_prescriptions'
          )`
       );
-      
+
       if (!tableCheck[0].exists) {
         return [];
       }
 
       const result = await this.dataSource.query(
-        `SELECT pp.*, pm.medicine_type, pm.medicine, pm.potency, pm.dosage,
+        `SELECT pp.*, pp.id as prescription_id, pm.id as medicine_id, 
+                pm.medicine_type, pm.medicine, pm.potency, pm.dosage,
                 pm.morning, pm.afternoon, pm.night, pm.notes as medicine_notes
          FROM patient_prescriptions pp
          LEFT JOIN prescription_medicines pm ON pp.id = pm.patient_prescriptions_id

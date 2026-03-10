@@ -23,18 +23,36 @@ export class PresentingComplaintsService {
     }
 
     async savePatientPresentingComplaints(data: any, user: any) {
+        console.log('DEBUG: savePatientPresentingComplaints received:', data);
         try {
             await this.createTablesIfNotExist();
 
-            const { patient_id, notes } = data;
+            const { id, patient_id, notes } = data;
+            const numericId = id ? parseInt(id.toString()) : null;
+            const numericPatientId = parseInt(patient_id?.toString());
             const created_by = user?.sub || user?.id || user?.userId || 1;
 
-            const result = await this.dataSource.query(
-                `INSERT INTO patient_presenting_complaints (notes, patient_id, created_by) 
-         VALUES ($1, $2, $3) 
-         RETURNING *`,
-                [notes, patient_id, created_by]
-            );
+            let result;
+            if (numericId) {
+                console.log('DEBUG: Updating complaint with ID:', numericId);
+                // Update existing record
+                result = await this.dataSource.query(
+                    `UPDATE patient_presenting_complaints 
+                     SET notes = $1, updated_at = CURRENT_TIMESTAMP 
+                     WHERE id = $2 
+                     RETURNING *`,
+                    [notes, numericId]
+                );
+            } else {
+                console.log('DEBUG: Inserting new complaint for patient:', numericPatientId);
+                // Insert new record
+                result = await this.dataSource.query(
+                    `INSERT INTO patient_presenting_complaints (notes, patient_id, created_by) 
+                     VALUES ($1, $2, $3) 
+                     RETURNING *`,
+                    [notes, numericPatientId, created_by]
+                );
+            }
 
             return { success: true, data: result[0] };
         } catch (error) {
@@ -60,6 +78,19 @@ export class PresentingComplaintsService {
         } catch (error) {
             console.error('Database error fetching presenting complaints:', error);
             throw new Error('Failed to fetch presenting complaints');
+        }
+    }
+
+    async deletePatientPresentingComplaint(id: number, user: any) {
+        try {
+            await this.dataSource.query(
+                `DELETE FROM patient_presenting_complaints WHERE id = $1`,
+                [id]
+            );
+            return { success: true };
+        } catch (error) {
+            console.error('Database error deleting presenting complaint:', error);
+            throw new Error('Failed to delete presenting complaint');
         }
     }
 }
