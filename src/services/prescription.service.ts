@@ -179,13 +179,14 @@ export class PrescriptionService {
 
   async deletePatientPrescription(id: number, user: any) {
     try {
-      const location_id = user?.primary_location_id || user?.location_id || user?.id;
+      const userId = user?.sub || user?.id || user?.userId;
+      const location_id = userId ? await this.userLocationService.getUserLocationId(userId) : 1;
 
       if (!location_id) {
         throw new Error('Location ID not found in user context');
       }
 
-      await this.dataSource.query(
+      const result = await this.dataSource.query(
         'DELETE FROM patient_prescriptions WHERE id = $1 AND location_id = $2',
         [id, location_id]
       );
