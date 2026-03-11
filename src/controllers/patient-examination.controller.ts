@@ -1,6 +1,15 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request, Query, UseInterceptors, UploadedFiles, BadRequestException } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PatientExaminationService } from '../services/patient-examination.service';
+import { diskStorage } from 'multer';
+import { extname, join } from 'path';
+import * as fs from 'fs';
+
+const uploadDir = join(process.cwd(), 'patientexaminationreport');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
 
 @Controller('patient-examination')
 @UseGuards(JwtAuthGuard)
@@ -73,8 +82,6 @@ export class PatientExaminationController {
     return this.patientExaminationService.getPayments(id);
   }
 
-
-
   @Post(':id/add-payment')
   async addPayment(@Param('id') id: number, @Body() paymentData: { paymentMethod: string; amount: number; notes?: string }) {
     return this.patientExaminationService.addPayment(id, paymentData);
@@ -93,5 +100,45 @@ export class PatientExaminationController {
   @Get(':id/daily-receipt')
   async getDailyReceipt(@Param('id') id: number) {
     return this.patientExaminationService.getDailyReceipt(id);
+  }
+
+  @Post(':id/upload-reports')
+  @UseInterceptors(FilesInterceptor('files', 10, {
+    storage: diskStorage({
+      destination: uploadDir,
+      filename: (req, file, cb) => {
+        const patientId = req.params.id;
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        const ext = extname(file.originalname);
+        cb(null, `patient_${patientId}_${uniqueSuffix}${ext}`);
+      },
+    }),
+    fileFilter: (req, file, cb) => {
+      const allowedTypes = /\.(jpg|jpeg|png|gif|pdf|doc|docx)$/i;
+      if (!allowedTypes.test(extname(file.originalname))) {
+        return cb(new BadRequestException('Only image/pdf/doc files are allowed'), false);
+      }
+      cb(null, true);
+    },
+  }))
+  async uploadReports(
+    @Param('id') id: number,
+    @UploadedFiles() files: any[],
+  ) {
+    if (!files || files.length === 0) {
+      throw new BadRequestException('No files uploaded');
+    }
+    const fileNames = files.map(f => f.filename);
+    return this.patientExaminationService.addReportFiles(id, fileNames);
+  }
+
+  @Get(':id/reports')
+  async getReports(@Param('id') id: number) {
+    return this.patientExaminationService.getReportFiles(id);
+  }
+
+  @Delete(':id/reports/:filename')
+  async deleteReport(@Param('id') id: number, @Param('filename') filename: string) {
+    return this.patientExaminationService.deleteReportFile(id, filename, uploadDir);
   }
 }

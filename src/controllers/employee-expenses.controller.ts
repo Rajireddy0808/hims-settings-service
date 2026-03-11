@@ -5,7 +5,6 @@ import { EmployeeExpensesService } from '../services/employee-expenses.service';
 import { CreateExpenseDto, UpdateExpenseStatusDto } from '../dto/expense.dto';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
-import type { File } from 'multer';
 
 @Controller('employee-expenses')
 export class EmployeeExpensesController {
@@ -88,7 +87,7 @@ export class EmployeeExpensesController {
   async create(
     @Request() req,
     @Body() createExpenseDto: CreateExpenseDto,
-    @UploadedFile() file?: File
+    @UploadedFile() file?: Express.Multer.File
   ) {
     // Get user's primary location from database
     const user = await this.employeeExpensesService.getUserById(req.user.id);

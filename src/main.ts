@@ -22,6 +22,11 @@ async function bootstrap() {
     prefix: '/uploads/',
   });
 
+  // Serve static files from patientexaminationreport directory
+  app.useStaticAssets(join(__dirname, '..', 'patientexaminationreport'), {
+    prefix: '/patientexaminationreport/',
+  });
+
   const config = new DocumentBuilder()
     .setTitle('HIMS Settings Service')
     .setDescription('Settings microservice for HIMS')

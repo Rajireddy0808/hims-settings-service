@@ -92,6 +92,70 @@ export class PatientExaminationService {
 
 
 
+  async runFileMigration() {
+    try {
+      await this.patientExaminationRepository.query(`
+        ALTER TABLE patient_examination 
+        ADD COLUMN IF NOT EXISTS file TEXT;
+      `);
+      return { success: true, message: 'Checked and added file column to patient_examination' };
+    } catch (error) {
+      console.error('Migration error:', error);
+      return { success: false, message: error.message };
+    }
+  }
+
+  async addReportFiles(examinationId: number, fileNames: string[]): Promise<any> {
+    const examination = await this.patientExaminationRepository.findOne({ where: { id: examinationId } });
+    if (!examination) {
+      throw new Error('Examination not found');
+    }
+    let existingFiles: string[] = [];
+    if (examination.file) {
+      try { existingFiles = JSON.parse(examination.file); } catch { existingFiles = []; }
+    }
+    const updatedFiles = [...existingFiles, ...fileNames];
+    await this.patientExaminationRepository.update(examinationId, { file: JSON.stringify(updatedFiles) });
+    return { message: 'Files uploaded successfully', files: updatedFiles };
+  }
+
+  async getReportFiles(examinationId: number): Promise<any> {
+    const examination = await this.patientExaminationRepository.findOne({ where: { id: examinationId } });
+    if (!examination) {
+      return { files: [] };
+    }
+    let files: string[] = [];
+    if (examination.file) {
+      try { files = JSON.parse(examination.file); } catch { files = []; }
+    }
+    return { files };
+  }
+
+  async deleteReportFile(examinationId: number, filename: string, uploadDir: string): Promise<any> {
+    const examination = await this.patientExaminationRepository.findOne({ where: { id: examinationId } });
+    if (!examination) {
+      throw new Error('Examination not found');
+    }
+    let files: string[] = [];
+    if (examination.file) {
+      try { files = JSON.parse(examination.file); } catch { files = []; }
+    }
+    const updatedFiles = files.filter(f => f !== filename);
+    await this.patientExaminationRepository.update(examinationId, { file: JSON.stringify(updatedFiles) });
+
+    // Delete physical file
+    const filePath = require('path').join(uploadDir, filename);
+    try {
+      const fs = require('fs');
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    } catch (e) {
+      console.error('Error deleting file:', e);
+    }
+    return { message: 'File deleted successfully', files: updatedFiles };
+  }
+
   async addPayment(examinationId: number, paymentData: { paymentMethod: string; amount: number; notes?: string }): Promise<any> {
     // Use raw query to ensure update works
     const examination = await this.patientExaminationRepository.query(

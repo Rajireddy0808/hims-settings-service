@@ -4,7 +4,6 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { SystemSettingsService } from '../services/system-settings.service';
 import { UpdateSystemSettingsDto } from '../dto/system-settings.dto';
 import { diskStorage } from 'multer';
-import type { File } from 'multer';
 import { extname } from 'path';
 
 @Controller('system-settings')
@@ -52,7 +51,7 @@ export class SystemSettingsController {
       }
     },
   }))
-  async uploadLogo(@UploadedFile() file: File) {
+  async uploadLogo(@UploadedFile() file: Express.Multer.File) {
     try {
 
       if (!file) {

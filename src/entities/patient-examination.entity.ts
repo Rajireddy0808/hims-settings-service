@@ -65,6 +65,9 @@ export class PatientExamination {
   @Column({ name: 'created_by' })
   createdBy: number;
 
+  @Column({ nullable: true, type: 'text' })
+  file: string;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
