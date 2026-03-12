@@ -179,4 +179,65 @@ export class PatientListService {
       totalPages: Math.ceil(total / limit)
     };
   }
+
+  async getMonthlyPatientStats() {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      const endOfMonth = new Date(startOfMonth);
+      endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+
+      const stats = await this.patientRepository.createQueryBuilder('patient')
+        .select([
+          `COUNT(CASE WHEN DATE(patient.created_at) = '${today}' THEN 1 END) as patients_today`,
+          `COUNT(CASE WHEN patient.created_at >= :startOfMonth AND patient.created_at < :endOfMonth THEN 1 END) as patients_month`
+        ])
+        .setParameters({ startOfMonth, endOfMonth })
+        .getRawOne();
+
+      return {
+        today: parseInt(stats.patients_today || '0'),
+        month: parseInt(stats.patients_month || '0')
+      };
+    } catch (error) {
+      console.error('Error fetching monthly patient stats:', error);
+      return { today: 0, month: 0 };
+    }
+  }
+
+  async getYearlyPatientFlow() {
+    try {
+      const currentYear = new Date().getFullYear();
+      
+      const stats = await this.patientRepository.createQueryBuilder('patient')
+        .select("EXTRACT(MONTH FROM patient.created_at)", "month")
+        .addSelect("COUNT(*)", "count")
+        .where("EXTRACT(YEAR FROM patient.created_at) = :currentYear", { currentYear })
+        .groupBy("month")
+        .orderBy("month", "ASC")
+        .getRawMany();
+
+      // Initialize all 12 months with 0
+      const monthlyData = Array.from({ length: 12 }, (_, i) => ({
+        month: i + 1,
+        count: 0
+      }));
+
+      // Map db results to the month array
+      stats.forEach(item => {
+        const monthIndex = parseInt(item.month) - 1;
+        if (monthIndex >= 0 && monthIndex < 12) {
+          monthlyData[monthIndex].count = parseInt(item.count);
+        }
+      });
+
+      return monthlyData;
+    } catch (error) {
+      console.error('Error fetching yearly patient flow:', error);
+      return [];
+    }
+  }
 }

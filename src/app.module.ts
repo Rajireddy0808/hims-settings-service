@@ -158,6 +158,11 @@ import { Holiday } from './entities/holiday.entity';
 import { HRPolicy } from './entities/hr-policy.entity';
 import { HRPoliciesController } from './controllers/hr-policies.controller';
 import { HRPoliciesService } from './services/hr-policies.service';
+import { MobileOperator } from './entities/mobile-operator.entity';
+import { MobileSimMaster } from './entities/mobile-sim-master.entity';
+import { MobileRechargePlan } from './entities/mobile-recharge-plan.entity';
+import { MobileRechargeService } from './services/mobile-recharge.service';
+import { MobileRechargeController } from './controllers/mobile-recharge.controller';
 
 
 @Module({
@@ -211,6 +216,9 @@ import { HRPoliciesService } from './services/hr-policies.service';
       Holiday,
       UserSalaryDetails,
       HRPolicy,
+      MobileOperator,
+      MobileSimMaster,
+      MobileRechargePlan,
     ]),
   ],
   controllers: [
@@ -272,6 +280,7 @@ import { HRPoliciesService } from './services/hr-policies.service';
     UserSalaryController,
     SalaryCalculationController,
     HRPoliciesController,
+    MobileRechargeController,
   ],
   providers: [
     AuthService,
@@ -328,6 +337,7 @@ import { HRPoliciesService } from './services/hr-policies.service';
     UserSalaryService,
     SalaryCalculationService,
     HRPoliciesService,
+    MobileRechargeService,
   ],
 })
 export class AppModule { }

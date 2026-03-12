@@ -125,7 +125,7 @@ export class AppointmentController {
     );
   }
 
-  @Get(':id')
+  @Get('all')
   @ApiOperation({ summary: 'Get appointment by ID' })
   async getAppointmentById(@Param('id') id: string) {
     return this.appointmentService.getAppointmentById(id);

@@ -4,6 +4,8 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PatientRegistrationService } from '../services/patient-registration.service';
 import { PatientListService } from '../services/patient-list.service';
 import { UserLocationService } from '../services/user-location.service';
+import { AppointmentService } from '../services/appointment.service';
+import { PatientExaminationService } from '../services/patient-examination.service';
 
 @ApiTags('Patient Registration')
 @ApiBearerAuth()
@@ -13,8 +15,34 @@ export class PatientRegistrationController {
   constructor(
     private readonly patientRegistrationService: PatientRegistrationService,
     private readonly patientListService: PatientListService,
-    private readonly userLocationService: UserLocationService
+    private readonly userLocationService: UserLocationService,
+    private readonly appointmentService: AppointmentService,
+    private readonly patientExaminationService: PatientExaminationService
   ) { }
+
+  @Get('dashboard-stats')
+  @ApiOperation({ summary: 'Get all dashboard statistics in one call' })
+  async getDashboardStats() {
+    const [patientStats, appointmentStats, financialStats, patientYearlyFlow, appointmentYearlyFlow, financialYearlyFlow, paymentMethodYearlyFlow] = await Promise.all([
+      this.patientListService.getMonthlyPatientStats(),
+      this.appointmentService.getMonthlyAppointmentStats(),
+      this.patientExaminationService.getMonthlyFinancialStats(),
+      this.patientListService.getYearlyPatientFlow(),
+      this.appointmentService.getYearlyAppointmentFlow(),
+      this.patientExaminationService.getYearlyFinancialFlow(),
+      this.patientExaminationService.getYearlyPaymentMethodFlow(),
+    ]);
+
+    return {
+      patients: patientStats,
+      appointments: appointmentStats,
+      financials: financialStats,
+      patientYearlyFlow: patientYearlyFlow,
+      appointmentYearlyFlow: appointmentYearlyFlow,
+      financialYearlyFlow: financialYearlyFlow,
+      paymentMethodYearlyFlow: paymentMethodYearlyFlow,
+    };
+  }
 
   @Get()
   @ApiOperation({ summary: 'Get all patients' })

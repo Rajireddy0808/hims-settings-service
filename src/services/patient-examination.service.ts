@@ -507,4 +507,103 @@ export class PatientExaminationService {
       }
     };
   }
+
+  async getMonthlyFinancialStats() {
+    try {
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      const endOfMonth = new Date(startOfMonth);
+      endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+
+      const stats = await this.patientExaminationRepository.createQueryBuilder('pe')
+        .select([
+          'SUM(pe.paid_amount) as total_paid',
+          'SUM(pe.due_amount) as total_due'
+        ])
+        .where('pe.created_at >= :startOfMonth AND pe.created_at < :endOfMonth', { startOfMonth, endOfMonth })
+        .getRawOne();
+
+      return {
+        revenue: parseFloat(stats.total_paid || '0'),
+        dueAmount: parseFloat(stats.total_due || '0')
+      };
+    } catch (error) {
+      console.error('Error fetching monthly financial stats:', error);
+      return { revenue: 0, dueAmount: 0 };
+    }
+  }
+
+  async getYearlyFinancialFlow() {
+    try {
+      const currentYear = new Date().getFullYear();
+      
+      const stats = await this.patientExaminationRepository.createQueryBuilder('pe')
+        .select("EXTRACT(MONTH FROM pe.created_at)", "month")
+        .addSelect("SUM(pe.paid_amount)", "paid")
+        .addSelect("SUM(pe.due_amount)", "due")
+        .where("EXTRACT(YEAR FROM pe.created_at) = :currentYear", { currentYear })
+        .groupBy("month")
+        .orderBy("month", "ASC")
+        .getRawMany();
+
+      // Initialize all 12 months with 0
+      const monthlyData = Array.from({ length: 12 }, (_, i) => ({
+        month: i + 1,
+        paid: 0,
+        due: 0
+      }));
+
+      // Map db results to the month array
+      stats.forEach(item => {
+        const monthIndex = parseInt(item.month) - 1;
+        if (monthIndex >= 0 && monthIndex < 12) {
+          monthlyData[monthIndex].paid = parseFloat(item.paid || '0');
+          monthlyData[monthIndex].due = parseFloat(item.due || '0');
+        }
+      });
+
+      return monthlyData;
+    } catch (error) {
+      console.error('Error fetching yearly financial flow:', error);
+      return [];
+    }
+  }
+
+  async getYearlyPaymentMethodFlow() {
+    try {
+      const currentYear = new Date().getFullYear();
+      
+      const stats = await this.paymentInstallmentRepository.createQueryBuilder('pi')
+        .select("EXTRACT(MONTH FROM pi.payment_date)", "month")
+        .addSelect("pi.payment_method", "method")
+        .addSelect("SUM(pi.amount)", "amount")
+        .where("EXTRACT(YEAR FROM pi.payment_date) = :currentYear", { currentYear })
+        .groupBy("month")
+        .addGroupBy("method")
+        .orderBy("month", "ASC")
+        .getRawMany();
+
+      // Initialize all 12 months
+      const monthlyData = Array.from({ length: 12 }, (_, i) => ({
+        month: i + 1,
+        methods: {} as Record<string, number>
+      }));
+
+      // Map db results to the month array
+      stats.forEach(item => {
+        const monthIndex = parseInt(item.month) - 1;
+        if (monthIndex >= 0 && monthIndex < 12) {
+          const method = item.method || 'Unknown';
+          monthlyData[monthIndex].methods[method] = parseFloat(item.amount || '0');
+        }
+      });
+
+      return monthlyData;
+    } catch (error) {
+      console.error('Error fetching yearly payment method flow:', error);
+      return [];
+    }
+  }
 }

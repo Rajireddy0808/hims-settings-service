@@ -563,4 +563,68 @@ export class AppointmentService {
       };
     }
   }
+
+  async getMonthlyAppointmentStats() {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      
+      const endOfMonth = new Date(startOfMonth);
+      endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+      
+      const startOfMonthStr = startOfMonth.toISOString().split('T')[0];
+      const endOfMonthStr = endOfMonth.toISOString().split('T')[0];
+
+      const stats = await this.dataSource.query(`
+        SELECT 
+          (SELECT COUNT(*) FROM appointments WHERE appointment_date = $1) as appointments_today,
+          (SELECT COUNT(*) FROM appointments WHERE appointment_date >= $2 AND appointment_date < $3) as appointments_month
+      `, [today, startOfMonthStr, endOfMonthStr]);
+
+      return {
+        today: parseInt(stats[0].appointments_today),
+        month: parseInt(stats[0].appointments_month)
+      };
+    } catch (error) {
+      console.error('Error fetching monthly appointment stats:', error);
+      return { today: 0, month: 0 };
+    }
+  }
+
+  async getYearlyAppointmentFlow() {
+    try {
+      const currentYear = new Date().getFullYear();
+      
+      const stats = await this.dataSource.query(`
+        SELECT 
+          EXTRACT(MONTH FROM appointment_date) as month,
+          COUNT(*) as count
+        FROM appointments
+        WHERE EXTRACT(YEAR FROM appointment_date) = $1
+        GROUP BY month
+        ORDER BY month ASC
+      `, [currentYear]);
+
+      // Initialize all 12 months with 0
+      const monthlyData = Array.from({ length: 12 }, (_, i) => ({
+        month: i + 1,
+        count: 0
+      }));
+
+      // Map db results to the month array
+      stats.forEach(item => {
+        const monthIndex = parseInt(item.month) - 1;
+        if (monthIndex >= 0 && monthIndex < 12) {
+          monthlyData[monthIndex].count = parseInt(item.count);
+        }
+      });
+
+      return monthlyData;
+    } catch (error) {
+      console.error('Error fetching yearly appointment flow:', error);
+      return [];
+    }
+  }
 }
