@@ -15,97 +15,61 @@ export class EmployeeExpensesService {
     try {
       const query = this.employeeExpenseRepository
         .createQueryBuilder('expense')
-        .leftJoin('users', 'user', 'user.id = expense.employeeId')
+        .leftJoinAndSelect('expense.employee', 'employee')
         .leftJoinAndSelect('expense.expenseCategory', 'category')
-        .leftJoin('expense.approver', 'approver')
-        .select([
-          'expense.id as expense_id',
-          'expense.employee_id as expense_employee_id',
-          'expense.expense_category_id as expense_expense_category_id',
-          'expense.location_id as expense_location_id',
-          'expense.amount as expense_amount',
-          'expense.description as expense_description',
-          'expense.expense_date as expense_expense_date',
-          'expense.receipt as expense_receipt',
-          'expense.status as expense_status',
-          'expense.approved_by as expense_approved_by',
-          'expense.approved_at as expense_approved_at',
-          'expense.rejection_reason as expense_rejection_reason',
-          'expense.created_at as expense_created_at',
-          'expense.updated_at as expense_updated_at',
-          'user.id as user_id',
-          'user.first_name as user_first_name',
-          'user.last_name as user_last_name',
-          'user.email as user_email',
-          'approver.id as approver_id',
-          'approver.first_name as approver_first_name',
-          'approver.last_name as approver_last_name',
-          'approver.email as approver_email',
-          'category.id as category_id',
-          'category.name as category_name',
-          'category.description as category_description',
-          'category.is_active as category_is_active'
-        ])
-        .orderBy('expense.created_at', 'DESC');
+        .leftJoinAndSelect('expense.approver', 'approver')
+        .orderBy('expense.createdAt', 'DESC');
 
       if (fromDate) {
-        query.andWhere('expense.expense_date >= :fromDate', { fromDate });
+        query.andWhere('expense.expenseDate >= :fromDate', { fromDate });
       }
 
       if (toDate) {
-        query.andWhere('expense.expense_date <= :toDate', { toDate });
+        query.andWhere('expense.expenseDate <= :toDate', { toDate });
       }
 
-      // Clone query for count
-      const countQuery = Object.assign(Object.create(Object.getPrototypeOf(query)), query);
-      const totalRecords = await countQuery.select('COUNT(expense.id)', 'count').getRawOne();
-
-      // Apply pagination
       const skip = (page - 1) * limit;
-      query.limit(limit).offset(skip);
+      const [expenses, total] = await query
+        .skip(skip)
+        .take(limit)
+        .getManyAndCount();
 
-      const result = await query.getRawMany();
-
-      const data = result.map(raw => ({
-        id: raw.expense_id,
-        employeeId: raw.expense_employee_id,
-        locationId: raw.expense_location_id,
-        amount: raw.expense_amount,
-        description: raw.expense_description,
-        expenseDate: raw.expense_expense_date,
-        receipt: raw.expense_receipt,
-        status: raw.expense_status,
-        approvedBy: raw.expense_approved_by,
-        approvedAt: raw.expense_approved_at,
-        rejectionReason: raw.expense_rejection_reason,
-        createdAt: raw.expense_created_at,
-        updatedAt: raw.expense_updated_at,
-        expenseCategory: {
-          id: raw.category_id,
-          name: raw.category_name,
-          description: raw.category_description,
-          isActive: raw.category_is_active
-        },
+      // Maintain the same return structure but use the entity objects
+      const data = expenses.map(expense => ({
+        id: expense.id,
+        employeeId: expense.employeeId,
+        locationId: expense.locationId,
+        amount: expense.amount,
+        description: expense.description,
+        expenseDate: expense.expenseDate,
+        receipt: expense.receipt,
+        status: expense.status,
+        approvedBy: expense.approvedBy,
+        approvedAt: expense.approvedAt,
+        rejectionReason: expense.rejectionReason,
+        createdAt: expense.createdAt,
+        updatedAt: expense.updatedAt,
+        expenseCategory: expense.expenseCategory,
         employee: {
-          id: raw.user_id,
-          firstName: raw.user_first_name,
-          lastName: raw.user_last_name,
-          email: raw.user_email
+          id: expense.employee?.id,
+          firstName: expense.employee?.firstName,
+          lastName: expense.employee?.lastName,
+          email: expense.employee?.email
         },
-        approver: raw.approver_id ? {
-          id: raw.approver_id,
-          firstName: raw.approver_first_name,
-          lastName: raw.approver_last_name,
-          email: raw.approver_email
+        approver: expense.approver ? {
+          id: expense.approver.id,
+          firstName: expense.approver.firstName,
+          lastName: expense.approver.lastName,
+          email: expense.approver.email
         } : null
       }));
 
       return {
         data,
-        total: parseInt(totalRecords.count),
+        total,
         page,
         limit,
-        totalPages: Math.ceil(parseInt(totalRecords.count) / limit)
+        totalPages: Math.ceil(total / limit)
       };
     } catch (error) {
       console.error('Error in findAllWithEmployees:', error);
@@ -117,43 +81,32 @@ export class EmployeeExpensesService {
     try {
       const query = this.employeeExpenseRepository
         .createQueryBuilder('expense')
-        .leftJoin('users', 'user', 'user.id = expense.employeeId')
+        .leftJoinAndSelect('expense.employee', 'employee')
         .leftJoinAndSelect('expense.expenseCategory', 'category')
-        .select([
-          'expense.id',
-          'expense.amount',
-          'expense.description',
-          'expense.expense_date as expenseDate',
-          'expense.status',
-          'user.id as user_id',
-          'user.first_name as user_first_name',
-          'user.last_name as user_last_name',
-          'category.id as category_id',
-          'category.name as category_name'
-        ])
         .where('expense.status = :status', { status })
-        .orderBy('expense.expense_date', 'DESC');
+        .orderBy('expense.expenseDate', 'DESC');
 
       if (locationId) {
-        query.andWhere('user.location_id = :locationId', { locationId });
+        // locationId in the original query was used on the user's location
+        query.andWhere('employee.location_id = :locationId', { locationId });
       }
 
-      const result = await query.getRawMany();
+      const expenses = await query.getMany();
 
-      return result.map(raw => ({
-        id: raw.expense_id,
-        amount: raw.expense_amount,
-        description: raw.expense_description,
-        expenseDate: raw.expenseDate,
-        status: raw.expense_status,
+      return expenses.map(expense => ({
+        id: expense.id,
+        amount: expense.amount,
+        description: expense.description,
+        expenseDate: expense.expenseDate,
+        status: expense.status,
         expenseCategory: {
-          id: raw.category_id,
-          name: raw.category_name
+          id: expense.expenseCategory?.id,
+          name: expense.expenseCategory?.name
         },
         employee: {
-          id: raw.user_id,
-          firstName: raw.user_first_name,
-          lastName: raw.user_last_name
+          id: expense.employee?.id,
+          firstName: expense.employee?.firstName,
+          lastName: expense.employee?.lastName
         }
       }));
     } catch (error) {
@@ -169,10 +122,8 @@ export class EmployeeExpensesService {
       const query = this.employeeExpenseRepository
         .createQueryBuilder('expense')
         .leftJoinAndSelect('expense.expenseCategory', 'category')
-        .leftJoin('expense.approver', 'approver')
-        .leftJoin('users', 'user', 'user.id = expense.employeeId')
-        .addSelect(['approver.id', 'approver.firstName', 'approver.lastName', 'approver.email'])
-        .addSelect(['user.id', 'user.firstName', 'user.lastName', 'user.email'])
+        .leftJoinAndSelect('expense.employee', 'employee')
+        .leftJoinAndSelect('expense.approver', 'approver')
         .orderBy('expense.createdAt', 'DESC');
 
       if (employeeId) {
@@ -204,10 +155,10 @@ export class EmployeeExpensesService {
           isActive: expense.expenseCategory?.isActive
         },
         employee: {
-          id: expense.employeeId,
-          firstName: expense['user']?.firstName || 'N/A',
-          lastName: expense['user']?.lastName || 'N/A',
-          email: expense['user']?.email || 'N/A'
+          id: expense.employee?.id,
+          firstName: expense.employee?.firstName || 'N/A',
+          lastName: expense.employee?.lastName || 'N/A',
+          email: expense.employee?.email || 'N/A'
         },
         approver: expense.approver ? {
           id: expense.approver.id,

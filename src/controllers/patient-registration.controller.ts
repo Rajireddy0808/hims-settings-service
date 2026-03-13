@@ -54,7 +54,9 @@ export class PatientRegistrationController {
     @Query('toDate') toDate?: string,
     @Query('search') search?: string,
     @Query('page') page?: string,
-    @Query('limit') limit?: string
+    @Query('limit') limit?: string,
+    @Query('sort_field') sortField?: string,
+    @Query('sort_order') sortOrder?: 'ASC' | 'DESC' | 'asc' | 'desc'
   ) {
     const userId = req.user.sub || req.user.id || req.user.userId;
     let locationId: number;
@@ -73,7 +75,16 @@ export class PatientRegistrationController {
       return this.patientListService.getPatientsBySource(locationId, parseInt(patientSourceId), fromDate, toDate);
     }
 
-    return this.patientListService.getAllPatients(locationId, fromDate, toDate, pageNum, limitNum, search);
+    return this.patientListService.getAllPatients(
+      locationId, 
+      fromDate, 
+      toDate, 
+      pageNum, 
+      limitNum, 
+      search, 
+      sortField, 
+      sortOrder
+    );
   }
 
   @Get('ref-patients/list')

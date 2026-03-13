@@ -10,8 +10,17 @@ export class PatientListService {
     private patientRepository: Repository<Patient>,
   ) { }
 
-  async getAllPatients(locationId?: number, fromDate?: string, toDate?: string, page: number = 1, limit: number = 10, search?: string) {
-    console.log('Filters:', { fromDate, toDate, locationId, search }); // Debug log
+  async getAllPatients(
+    locationId?: number, 
+    fromDate?: string, 
+    toDate?: string, 
+    page: number = 1, 
+    limit: number = 10, 
+    search?: string,
+    sortField: string = 'created_at',
+    sortOrder: 'ASC' | 'DESC' | 'asc' | 'desc' = 'DESC'
+  ) {
+    console.log('Filters:', { fromDate, toDate, locationId, search, sortField, sortOrder }); // Debug log
 
     const queryBuilder = this.patientRepository.createQueryBuilder('patient')
       .leftJoin(qb => {
@@ -48,7 +57,7 @@ export class PatientListService {
     }
 
     if (search) {
-      const searchCondition = '(patient.patient_id LIKE :search OR patient.first_name ILIKE :search OR patient.last_name ILIKE :search OR patient.mobile LIKE :search)';
+      const searchCondition = '(patient.patient_id LIKE :search OR patient.first_name ILIKE :search OR patient.last_name ILIKE :search OR (patient.first_name || \' \' || patient.last_name) ILIKE :search OR patient.mobile LIKE :search)';
       if (locationId && locationId !== 0) {
         queryBuilder.andWhere(searchCondition, { search: `%${search}%` });
       } else {
@@ -57,7 +66,6 @@ export class PatientListService {
     }
 
     if (fromDate) {
-      console.log('Adding fromDate filter:', fromDate);
       if (locationId && locationId !== 0 || search) {
         queryBuilder.andWhere('DATE(patient.created_at) >= :fromDate', { fromDate });
       } else {
@@ -66,7 +74,6 @@ export class PatientListService {
     }
 
     if (toDate) {
-      console.log('Adding toDate filter:', toDate);
       if (locationId && locationId !== 0 || search || fromDate) {
         queryBuilder.andWhere('DATE(patient.created_at) <= :toDate', { toDate });
       } else {
@@ -74,9 +81,29 @@ export class PatientListService {
       }
     }
 
+    // Mapping frontend fields to DB columns for sorting
+    let orderByField = 'patient.created_at';
+    const sortFieldMap: Record<string, string> = {
+      'patientId': 'patient.patient_id',
+      'name': 'patient.first_name',
+      'mobile': 'patient.mobile',
+      'nextRenewalDate': 'latest_exam.next_renewal_date_pro',
+      'dueAmount': 'latest_exam.due_amount',
+      'age': 'patient.date_of_birth',
+      'gender': 'patient.gender',
+      'status': 'patient.status',
+      'createdAt': 'patient.created_at'
+    };
+
+    if (sortField && sortFieldMap[sortField]) {
+      orderByField = sortFieldMap[sortField];
+    }
+
+    const validatedSortOrder = (sortOrder || 'DESC').toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+
     const total = await queryBuilder.getCount();
     const data = await queryBuilder
-      .orderBy('patient.created_at', 'DESC')
+      .orderBy(orderByField, validatedSortOrder)
       .offset((page - 1) * limit)
       .limit(limit)
       .getRawMany();

@@ -492,13 +492,27 @@ export class MedicalHistoryController {
   @Get('patient-examinations')
   @ApiOperation({ summary: 'Get patient examinations with patient details' })
   async getPatientExaminations(
+    @Query('location_id') locationId?: string,
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
     @Query('from_date') fromDate?: string,
     @Query('to_date') toDate?: string,
-    @Query('search') search?: string
+    @Query('search') search?: string,
+    @Query('sort_field') sortField?: string,
+    @Query('sort_order') sortOrder?: 'ASC' | 'DESC' | 'asc' | 'desc',
+    @Query('mobile') mobile?: string
   ) {
-    return this.medicalHistoryService.getPatientExaminations(undefined, parseInt(page), parseInt(limit), fromDate, toDate, search);
+    return this.medicalHistoryService.getPatientExaminations(
+      locationId ? parseInt(locationId) : undefined, 
+      parseInt(page), 
+      parseInt(limit), 
+      fromDate, 
+      toDate, 
+      search, 
+      sortField, 
+      sortOrder, 
+      mobile
+    );
   }
 
   @Get('patient-medical-history/:patientId')

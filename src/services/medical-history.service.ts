@@ -1380,7 +1380,17 @@ export class MedicalHistoryService {
     }
   }
 
-  async getPatientExaminations(locationId?: number, page: number = 1, limit: number = 10, fromDate?: string, toDate?: string, search?: string) {
+  async getPatientExaminations(
+    locationId?: number,
+    page: number = 1,
+    limit: number = 10,
+    fromDate?: string,
+    toDate?: string,
+    search?: string,
+    sortField: string = 'created_at',
+    sortOrder: string = 'DESC',
+    mobile?: string
+  ) {
     try {
       const offset = (page - 1) * limit;
       let whereClause = '';
@@ -1409,14 +1419,48 @@ export class MedicalHistoryService {
       }
 
       if (search) {
-        conditions.push(`(p.first_name ILIKE $${paramIndex} OR p.last_name ILIKE $${paramIndex} OR (p.first_name || ' ' || p.last_name) ILIKE $${paramIndex})`);
+        conditions.push(`(p.first_name ILIKE $${paramIndex} OR p.last_name ILIKE $${paramIndex} OR (p.first_name || ' ' || p.last_name) ILIKE $${paramIndex} OR p.mobile ILIKE $${paramIndex})`);
         params.push(`%${search}%`);
+        paramIndex++;
+      }
+
+      if (mobile) {
+        conditions.push(`p.mobile ILIKE $${paramIndex}`);
+        params.push(`%${mobile}%`);
         paramIndex++;
       }
 
       if (conditions.length > 0) {
         whereClause = 'WHERE ' + conditions.join(' AND ');
       }
+
+      // Safeguard sorting
+      const allowedSortFields = [
+        'id', 'patient_id', 'treatment_plan_months_doctor',
+        'next_renewal_date_doctor', 'treatment_plan_months_pro',
+        'next_renewal_date_pro', 'created_at', 'patient_name',
+        'patient_mobile', 'last_visit_date', 'next_visit_date'
+      ];
+
+      // Map patient_name to the concatenated expression if sorting by it
+      let orderByField = sortField;
+      if (sortField === 'patient_name') {
+        orderByField = "COALESCE(p.first_name || ' ' || p.last_name, 'Unknown Patient')";
+      } else if (sortField === 'patient_mobile') {
+        orderByField = 'p.mobile';
+      } else if (sortField === 'last_visit_date') {
+        orderByField = '(SELECT MAX(appointment_date) FROM appointments WHERE patient_id = pe.patient_id AND appointment_date < CURRENT_DATE)';
+      } else if (sortField === 'next_visit_date') {
+        orderByField = '(SELECT MIN(appointment_date) FROM appointments WHERE patient_id = pe.patient_id AND appointment_date >= CURRENT_DATE)';
+      } else if (!allowedSortFields.includes(sortField)) {
+        orderByField = 'pe.created_at';
+      } else {
+        orderByField = `pe.${orderByField}`;
+      }
+
+      const validatedSortOrder = (sortOrder || 'DESC').toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+
+      console.log(`Fetching examinations with sortField: ${sortField}, sortOrder: ${validatedSortOrder}, orderByField: ${orderByField}`);
 
       // Get total count
       const countResult = await this.pool.query(`
@@ -1441,11 +1485,14 @@ export class MedicalHistoryService {
           pe.treatment_plan_months_pro,
           pe.next_renewal_date_pro,
           pe.created_at,
-          COALESCE(p.first_name || ' ' || p.last_name, 'Unknown Patient') as patient_name
+          COALESCE(p.first_name || ' ' || p.last_name, 'Unknown Patient') as patient_name,
+          p.mobile as patient_mobile,
+          (SELECT MAX(appointment_date) FROM appointments WHERE patient_id = pe.patient_id AND appointment_date < CURRENT_DATE) as last_visit_date,
+          (SELECT MIN(appointment_date) FROM appointments WHERE patient_id = pe.patient_id AND appointment_date >= CURRENT_DATE) as next_visit_date
         FROM patient_examination pe
         LEFT JOIN patients p ON pe.patient_id::text = p.id::text
         ${whereClause}
-        ORDER BY pe.created_at DESC
+        ORDER BY ${orderByField} ${validatedSortOrder}
         LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
       `, dataParams);
 

@@ -163,6 +163,7 @@ import { MobileSimMaster } from './entities/mobile-sim-master.entity';
 import { MobileRechargePlan } from './entities/mobile-recharge-plan.entity';
 import { MobileRechargeService } from './services/mobile-recharge.service';
 import { MobileRechargeController } from './controllers/mobile-recharge.controller';
+import { WhatsappModule } from './modules/whatsapp/whatsapp.module';
 
 
 @Module({
@@ -177,6 +178,7 @@ import { MobileRechargeController } from './controllers/mobile-recharge.controll
       signOptions: { expiresIn: '24h' },
     }),
     ConsultationModule,
+    WhatsappModule,
     TypeOrmModule.forFeature([
       User,
       UserInfo,
