@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ExpenseCategory } from '../entities/expense-category.entity';
@@ -13,7 +13,6 @@ export class ExpenseCategoriesService {
 
   async findAll(): Promise<ExpenseCategory[]> {
     return this.expenseCategoryRepository.find({ 
-      where: { isActive: true },
       order: { name: 'ASC' }
     });
   }
@@ -23,6 +22,14 @@ export class ExpenseCategoriesService {
   }
 
   async create(createExpenseCategoryDto: CreateExpenseCategoryDto): Promise<ExpenseCategory> {
+    const existing = await this.expenseCategoryRepository.findOne({ 
+      where: { name: createExpenseCategoryDto.name } 
+    });
+
+    if (existing) {
+      throw new ConflictException(`Expense category with name "${createExpenseCategoryDto.name}" already exists.`);
+    }
+
     const expenseCategory = this.expenseCategoryRepository.create(createExpenseCategoryDto);
     return this.expenseCategoryRepository.save(expenseCategory);
   }

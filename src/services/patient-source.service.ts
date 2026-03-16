@@ -24,6 +24,10 @@ export class PatientSourceService {
     if (existing) {
       throw new ConflictException('Patient source already exists');
     }
+
+    if (!data.code) {
+      data.code = data.title.toUpperCase().replace(/\s+/g, '_');
+    }
     
     const patientSource = this.patientSourceRepository.create(data);
     return this.patientSourceRepository.save(patientSource);
