@@ -46,6 +46,10 @@ export class PatientListService {
         'patient.created_at',
         'patient.updated_at',
         'patient.status',
+        'patient.fee as patient_fee',
+        'patient.amount as patient_amount',
+        'patient.fee_type as patient_fee_type',
+        'patient.address1 as patient_address1',
         'latest_exam.next_renewal_date_pro as next_renewal_date_pro',
         'latest_exam.due_amount as due_amount',
         'loc.name as location_name'
