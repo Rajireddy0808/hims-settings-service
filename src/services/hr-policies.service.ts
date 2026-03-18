@@ -2,7 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { HRPolicy } from '../entities/hr-policy.entity';
+import { HRPolicyAcceptance } from '../entities/hr-policy-acceptance.entity';
 import { CreateHRPolicyDto, UpdateHRPolicyDto } from '../dto/hr-policy.dto';
+import { AcceptHRPolicyDto } from '../dto/accept-hr-policy.dto';
 import * as XLSX from 'xlsx';
 
 @Injectable()
@@ -10,6 +12,8 @@ export class HRPoliciesService {
     constructor(
         @InjectRepository(HRPolicy)
         private readonly hrPolicyRepository: Repository<HRPolicy>,
+        @InjectRepository(HRPolicyAcceptance)
+        private readonly hrPolicyAcceptanceRepository: Repository<HRPolicyAcceptance>,
     ) { }
 
     async create(createDto: CreateHRPolicyDto): Promise<HRPolicy> {
@@ -131,5 +135,33 @@ export class HRPoliciesService {
 
     async remove(id: number): Promise<void> {
         await this.hrPolicyRepository.delete(id);
+    }
+
+    async accept(acceptDto: AcceptHRPolicyDto): Promise<HRPolicyAcceptance> {
+        const { userId, policyId, locationId } = acceptDto;
+        
+        // Check if already accepted
+        let acceptance = await this.hrPolicyAcceptanceRepository.findOne({
+            where: { userId, policyId }
+        });
+
+        if (acceptance) {
+            acceptance.locationId = locationId; // Update location if changed
+            return await this.hrPolicyAcceptanceRepository.save(acceptance);
+        }
+
+        acceptance = this.hrPolicyAcceptanceRepository.create({
+            userId,
+            policyId,
+            locationId
+        });
+
+        return await this.hrPolicyAcceptanceRepository.save(acceptance);
+    }
+
+    async getAcceptedPolicies(userId: number): Promise<HRPolicyAcceptance[]> {
+        return await this.hrPolicyAcceptanceRepository.find({
+            where: { userId }
+        });
     }
 }

@@ -4,6 +4,7 @@ import { Response } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { HRPoliciesService } from '../services/hr-policies.service';
 import { CreateHRPolicyDto, UpdateHRPolicyDto } from '../dto/hr-policy.dto';
+import { AcceptHRPolicyDto } from '../dto/accept-hr-policy.dto';
 
 @Controller('hr-policies')
 @UseGuards(JwtAuthGuard)
@@ -45,6 +46,16 @@ export class HRPoliciesController {
         );
     }
 
+    @Post('accept')
+    accept(@Body() acceptDto: AcceptHRPolicyDto) {
+        return this.hrPoliciesService.accept(acceptDto);
+    }
+
+    @Get('accepted-policies')
+    getAcceptedPolicies(@Query('userId') userId: string) {
+        return this.hrPoliciesService.getAcceptedPolicies(+userId);
+    }
+
     @Get(':id')
     findOne(@Param('id') id: string) {
         return this.hrPoliciesService.findOne(+id);
@@ -59,4 +70,5 @@ export class HRPoliciesController {
     remove(@Param('id') id: string) {
         return this.hrPoliciesService.remove(+id);
     }
+
 }

@@ -156,6 +156,7 @@ import { ExpenseCategory } from './entities/expense-category.entity';
 import { EmployeeExpense } from './entities/employee-expense.entity';
 import { Holiday } from './entities/holiday.entity';
 import { HRPolicy } from './entities/hr-policy.entity';
+import { HRPolicyAcceptance } from './entities/hr-policy-acceptance.entity';
 import { HRPoliciesController } from './controllers/hr-policies.controller';
 import { HRPoliciesService } from './services/hr-policies.service';
 import { MobileOperator } from './entities/mobile-operator.entity';
@@ -218,6 +219,7 @@ import { WhatsappModule } from './modules/whatsapp/whatsapp.module';
       Holiday,
       UserSalaryDetails,
       HRPolicy,
+      HRPolicyAcceptance,
       MobileOperator,
       MobileSimMaster,
       MobileRechargePlan,

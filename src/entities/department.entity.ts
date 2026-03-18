@@ -8,7 +8,7 @@ export class Department {
   id: number;
 
   @ApiProperty()
-  @Column({ unique: true })
+  @Column()
   name: string;
 
   @ApiProperty()
@@ -22,6 +22,10 @@ export class Department {
   @ApiProperty()
   @Column({ name: 'location_id', nullable: true })
   locationId: number;
+
+  @ApiProperty()
+  @Column({ name: 'service_id', nullable: true })
+  serviceId: number;
 
   @ApiProperty()
   @Column({ name: 'is_active', default: true })
