@@ -164,6 +164,9 @@ import { MobileSimMaster } from './entities/mobile-sim-master.entity';
 import { MobileRechargePlan } from './entities/mobile-recharge-plan.entity';
 import { MobileRechargeService } from './services/mobile-recharge.service';
 import { MobileRechargeController } from './controllers/mobile-recharge.controller';
+import { MedicineDaysController } from './controllers/medicine-days.controller';
+import { MedicineDaysService } from './services/medicine-days.service';
+import { MedicineDays } from './entities/medicine-days.entity';
 import { WhatsappModule } from './modules/whatsapp/whatsapp.module';
 
 
@@ -223,6 +226,7 @@ import { WhatsappModule } from './modules/whatsapp/whatsapp.module';
       MobileOperator,
       MobileSimMaster,
       MobileRechargePlan,
+      MedicineDays,
     ]),
   ],
   controllers: [
@@ -285,6 +289,7 @@ import { WhatsappModule } from './modules/whatsapp/whatsapp.module';
     SalaryCalculationController,
     HRPoliciesController,
     MobileRechargeController,
+    MedicineDaysController,
   ],
   providers: [
     AuthService,
@@ -342,6 +347,7 @@ import { WhatsappModule } from './modules/whatsapp/whatsapp.module';
     SalaryCalculationService,
     HRPoliciesService,
     MobileRechargeService,
+    MedicineDaysService,
   ],
 })
 export class AppModule { }
