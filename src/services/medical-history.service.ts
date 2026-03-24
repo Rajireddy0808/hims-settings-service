@@ -1406,22 +1406,23 @@ export class MedicalHistoryService {
         paramIndex++;
       }
 
-      if (fromDate) {
-        conditions.push(`pe.created_at >= $${paramIndex}`);
-        params.push(fromDate);
-        paramIndex++;
-      }
-
-      if (toDate) {
-        conditions.push(`pe.created_at <= $${paramIndex}`);
-        params.push(toDate + ' 23:59:59');
-        paramIndex++;
-      }
-
       if (search) {
-        conditions.push(`(p.first_name ILIKE $${paramIndex} OR p.last_name ILIKE $${paramIndex} OR (p.first_name || ' ' || p.last_name) ILIKE $${paramIndex} OR p.mobile ILIKE $${paramIndex})`);
+        conditions.push(`(p.first_name ILIKE $${paramIndex} OR p.last_name ILIKE $${paramIndex} OR (p.first_name || ' ' || p.last_name) ILIKE $${paramIndex} OR p.mobile ILIKE $${paramIndex} OR p.patient_id ILIKE $${paramIndex})`);
         params.push(`%${search}%`);
         paramIndex++;
+      } else {
+        // Only apply date filters if no search term is provided
+        if (fromDate) {
+          conditions.push(`pe.created_at >= $${paramIndex}`);
+          params.push(fromDate);
+          paramIndex++;
+        }
+
+        if (toDate) {
+          conditions.push(`pe.created_at <= $${paramIndex}`);
+          params.push(toDate + ' 23:59:59');
+          paramIndex++;
+        }
       }
 
       if (mobile) {
@@ -1439,7 +1440,7 @@ export class MedicalHistoryService {
         'id', 'patient_id', 'treatment_plan_months_doctor',
         'next_renewal_date_doctor', 'treatment_plan_months_pro',
         'next_renewal_date_pro', 'created_at', 'patient_name',
-        'patient_mobile', 'last_visit_date', 'next_visit_date'
+        'next_visit_date', 'custom_patient_id'
       ];
 
       // Map patient_name to the concatenated expression if sorting by it
@@ -1452,6 +1453,8 @@ export class MedicalHistoryService {
         orderByField = '(SELECT MAX(appointment_date) FROM appointments WHERE patient_id = pe.patient_id AND appointment_date < CURRENT_DATE)';
       } else if (sortField === 'next_visit_date') {
         orderByField = '(SELECT MIN(appointment_date) FROM appointments WHERE patient_id = pe.patient_id AND appointment_date >= CURRENT_DATE)';
+      } else if (sortField === 'custom_patient_id') {
+        orderByField = 'p.patient_id';
       } else if (!allowedSortFields.includes(sortField)) {
         orderByField = 'pe.created_at';
       } else {
@@ -1487,6 +1490,7 @@ export class MedicalHistoryService {
           pe.created_at,
           COALESCE(p.first_name || ' ' || p.last_name, 'Unknown Patient') as patient_name,
           p.mobile as patient_mobile,
+          p.patient_id as custom_patient_id,
           (SELECT MAX(appointment_date) FROM appointments WHERE patient_id = pe.patient_id AND appointment_date < CURRENT_DATE) as last_visit_date,
           (SELECT MIN(appointment_date) FROM appointments WHERE patient_id = pe.patient_id AND appointment_date >= CURRENT_DATE) as next_visit_date
         FROM patient_examination pe

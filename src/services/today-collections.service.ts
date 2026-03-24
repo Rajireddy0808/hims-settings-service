@@ -28,14 +28,19 @@ export class TodayCollectionsService {
     const query = this.paymentInstallmentRepository
       .createQueryBuilder('pi')
       .leftJoin('patient_examination', 'pe', 'pe.id = pi.patientExaminationId')
+      .leftJoin('patients', 'p', 'p.id::text = pe.patient_id::text')
       .select([
-      
-        'pe.createdAt as examinationDate',
-        'pe.totalAmount as totalAmount',
-        'pi.id as installmentId',
-        'pi.amount as installmentAmount',
-        'pi.paymentDate as paymentDate',
-        'pi.paymentMethod as paymentMethod'
+        'pe.id as examinationid',
+        'pe.patient_id as patientid',
+        'pe.createdAt as examinationdate',
+        'pe.totalAmount as totalamount',
+        'pi.id as installmentid',
+        'pi.amount as installmentamount',
+        'pi.paymentDate as paymentdate',
+        'pi.paymentMethod as paymentmethod',
+        'p.first_name as firstname',
+        'p.last_name as lastname',
+        'p.patient_id as custompatientid'
       ])
       .where('pi.paymentDate >= :startOfDay', { startOfDay })
       .andWhere('pi.paymentDate <= :endOfDay', { endOfDay });
