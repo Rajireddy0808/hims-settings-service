@@ -1348,7 +1348,8 @@ export class MedicalHistoryService {
               'dosage', pm.dosage,
               'morning', pm.morning,
               'afternoon', pm.afternoon,
-              'night', pm.night
+              'night', pm.night,
+              'notes', pm.notes
             )
           ) FILTER (WHERE pm.id IS NOT NULL) as medicines
         FROM patient_prescriptions pp

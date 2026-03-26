@@ -176,7 +176,7 @@ export class PatientExaminationService {
     const nextInstallmentNumber = (lastInstallment?.installmentNumber || 0) + 1;
 
     // Add new installment record
-    await this.paymentInstallmentRepository.save({
+    const newInstallment = await this.paymentInstallmentRepository.save({
       patientExaminationId: examinationId,
       installmentNumber: nextInstallmentNumber,
       paymentMethod: paymentData.paymentMethod,
@@ -199,6 +199,7 @@ export class PatientExaminationService {
 
     return {
       message: 'Payment installment added successfully',
+      installmentId: newInstallment.id,
       installmentNumber: nextInstallmentNumber,
       totalAmount: totalAmount,
       discountAmount: discountAmount,
