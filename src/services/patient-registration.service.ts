@@ -12,7 +12,7 @@ export class PatientRegistrationService {
     private patientRepository: Repository<Patient>,
     @InjectRepository(Location)
     private locationRepository: Repository<Location>,
-  ) {}
+  ) { }
 
   async registerPatient(patientData: any, locationId: number, createdBy: number) {
     const {
@@ -28,7 +28,7 @@ export class PatientRegistrationService {
     if (!location) {
       throw new Error('Location not found');
     }
-    
+
     // Generate patient ID based on location code
     const locationCode = location.locationCode;
     const lastPatient = await this.patientRepository
@@ -38,8 +38,8 @@ export class PatientRegistrationService {
       .setParameter('locationCode', locationCode)
       .getOne();
 
-    const nextId = lastPatient 
-      ? parseInt(lastPatient.patient_id.substring(locationCode.length)) + 1 
+    const nextId = lastPatient
+      ? parseInt(lastPatient.patient_id.substring(locationCode.length)) + 1
       : 1;
     const patientId = `${locationCode}${String(nextId).padStart(3, '0')}`;
 
@@ -99,8 +99,8 @@ export class PatientRegistrationService {
   }
 
   async updatePatient(patientId: string, patientData: any, locationId: number, updatedBy: number) {
-    const patient = await this.patientRepository.findOne({ 
-      where: { id: parseInt(patientId) } 
+    const patient = await this.patientRepository.findOne({
+      where: { id: parseInt(patientId) }
     });
 
     if (!patient) {
@@ -134,7 +134,7 @@ export class PatientRegistrationService {
     patient.emergency_contact = emergencyContact;
     patient.medical_history = medicalHistory;
     patient.medical_conditions = medicalConditions;
-    
+
     if (password) {
       patient.password = crypto.createHash('md5').update(password).digest('hex');
     }

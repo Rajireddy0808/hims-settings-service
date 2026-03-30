@@ -359,17 +359,36 @@ export class PatientExaminationService {
     return { message: 'NR List updated successfully', affectedRows: result[1] };
   }
 
-  async getDuePatients(page: number = 1, limit: number = 10): Promise<any> {
+  async getDuePatients(page: number = 1, limit: number = 10, search?: string): Promise<any> {
     const offset = (page - 1) * limit;
+    
+    const baseFilter = `pe.due_amount != 0`;
+    
+    // Build parameters and filter for count query (indexed from $1)
+    let countFilter = baseFilter;
+    const countParams: any[] = [];
+    if (search) {
+      countFilter += ` AND (p.first_name ILIKE $1 OR p.last_name ILIKE $1 OR p.mobile ILIKE $1 OR p.patient_id ILIKE $1)`;
+      countParams.push(`%${search}%`);
+    }
+
+    // Build parameters and filter for main query (indexed from $3 because $1=limit, $2=offset)
+    let dataFilter = baseFilter;
+    const dataParams: any[] = [limit, offset];
+    if (search) {
+      dataFilter += ` AND (p.first_name ILIKE $3 OR p.last_name ILIKE $3 OR p.mobile ILIKE $3 OR p.patient_id ILIKE $3)`;
+      dataParams.push(`%${search}%`);
+    }
     
     // Get total count
     const countResult = await this.patientExaminationRepository.query(`
       SELECT COUNT(DISTINCT pe.patient_id) as total
       FROM patient_examination pe
-      WHERE pe.due_amount != 0
-    `);
+      LEFT JOIN patients p ON pe.patient_id::integer = p.id
+      WHERE ${countFilter}
+    `, countParams);
     
-    const total = parseInt(countResult[0].total);
+    const total = parseInt(countResult[0]?.total || '0');
     
     // Get paginated data
     const duePatients = await this.patientExaminationRepository.query(`
@@ -386,11 +405,11 @@ export class PatientExaminationService {
         p.mobile,
         p.patient_id as patient_code
       FROM patient_examination pe
-      LEFT JOIN patients p ON pe.patient_id = p.id
-      WHERE pe.due_amount != 0
+      LEFT JOIN patients p ON pe.patient_id::integer = p.id
+      WHERE ${dataFilter}
       ORDER BY pe.patient_id, pe.created_at DESC
       LIMIT $1 OFFSET $2
-    `, [limit, offset]);
+    `, dataParams);
 
     const data = duePatients.map(item => ({
       id: item.id,
@@ -418,39 +437,61 @@ export class PatientExaminationService {
     };
   }
 
-  async getNRList(page: number = 1, limit: number = 10, fromDate?: string, toDate?: string): Promise<any> {
+  async getNRList(page: number = 1, limit: number = 10, fromDate?: string, toDate?: string, search?: string): Promise<any> {
     const offset = (page - 1) * limit;
     
-    let dateFilter = '';
+    const baseFilter = `
+      pe.treatment_plan_months_pro IS NULL
+      AND pe.next_renewal_date_pro IS NULL
+      AND pe.total_amount = 0
+      AND pe.discount_amount = 0
+      AND pe.paid_amount = 0
+      AND pe.due_amount = 0
+    `;
+    
+    // Build parameters and filter for count query (indexed from $1)
+    let countFilter = baseFilter;
     const countParams: any[] = [];
-    const queryParams: any[] = [limit, offset];
-    
-    if (fromDate) {
-      dateFilter += ` AND pe.next_renewal_date_doctor >= $${countParams.length + 1}`;
-      countParams.push(fromDate);
-      queryParams.push(fromDate);
+    if (search) {
+      countFilter += ` AND (p.first_name ILIKE $1 OR p.last_name ILIKE $1 OR p.mobile ILIKE $1 OR p.patient_id ILIKE $1)`;
+      countParams.push(`%${search}%`);
+    } else {
+      if (fromDate) {
+        countFilter += ` AND pe.next_renewal_date_doctor >= $${countParams.length + 1}`;
+        countParams.push(fromDate);
+      }
+      if (toDate) {
+        countFilter += ` AND pe.next_renewal_date_doctor <= $${countParams.length + 1}`;
+        countParams.push(toDate);
+      }
     }
-    
-    if (toDate) {
-      dateFilter += ` AND pe.next_renewal_date_doctor <= $${countParams.length + 1}`;
-      countParams.push(toDate);
-      queryParams.push(toDate);
+
+    // Build parameters and filter for main query (indexed from $3 because $1=limit, $2=offset)
+    let dataFilter = baseFilter;
+    const dataParams: any[] = [limit, offset];
+    if (search) {
+      dataFilter += ` AND (p.first_name ILIKE $3 OR p.last_name ILIKE $3 OR p.mobile ILIKE $3 OR p.patient_id ILIKE $3)`;
+      dataParams.push(`%${search}%`);
+    } else {
+      if (fromDate) {
+        dataFilter += ` AND pe.next_renewal_date_doctor >= $${dataParams.length + 1}`;
+        dataParams.push(fromDate);
+      }
+      if (toDate) {
+        dataFilter += ` AND pe.next_renewal_date_doctor <= $${dataParams.length + 1}`;
+        dataParams.push(toDate);
+      }
     }
     
     // Get total count
     const countResult = await this.patientExaminationRepository.query(`
       SELECT COUNT(DISTINCT pe.patient_id) as total
       FROM patient_examination pe
-      WHERE pe.treatment_plan_months_pro IS NULL
-        AND pe.next_renewal_date_pro IS NULL
-        AND pe.total_amount = 0
-        AND pe.discount_amount = 0
-        AND pe.paid_amount = 0
-        AND pe.due_amount = 0
-        ${dateFilter}
+      LEFT JOIN patients p ON pe.patient_id::integer = p.id
+      WHERE ${countFilter}
     `, countParams);
     
-    const total = parseInt(countResult[0].total);
+    const total = parseInt(countResult[0]?.total || '0');
     
     // Get paginated data
     const nrList = await this.patientExaminationRepository.query(`
@@ -471,20 +512,11 @@ export class PatientExaminationService {
         p.mobile,
         p.patient_id as patient_code
       FROM patient_examination pe
-      LEFT JOIN patients p ON pe.patient_id = p.id
-      WHERE pe.treatment_plan_months_pro IS NULL
-        AND pe.next_renewal_date_pro IS NULL
-        AND pe.total_amount = 0
-        AND pe.discount_amount = 0
-        AND pe.paid_amount = 0
-        AND pe.due_amount = 0
-        ${dateFilter.replace(/\$\d+/g, (match) => {
-          const num = parseInt(match.substring(1));
-          return `$${num + 2}`;
-        })}
+      LEFT JOIN patients p ON pe.patient_id::integer = p.id
+      WHERE ${dataFilter}
       ORDER BY pe.patient_id, pe.created_at DESC
       LIMIT $1 OFFSET $2
-    `, queryParams);
+    `, dataParams);
 
     const data = nrList.map(item => ({
       id: item.id,

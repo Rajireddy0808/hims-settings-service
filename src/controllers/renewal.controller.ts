@@ -16,10 +16,13 @@ export class RenewalController {
     @Request() req, 
     @Query('locationId') locationId?: string,
     @Query('fromDate') fromDate?: string,
-    @Query('toDate') toDate?: string
+    @Query('toDate') toDate?: string,
+    @Query('search') search?: string,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10'
   ) {
     const userId = req.user?.user_id || req.user?.id;
     const locId = locationId ? parseInt(locationId) : req.user?.location_id || 1;
-    return this.renewalService.getRenewalPatients(locId, fromDate, toDate);
+    return this.renewalService.getRenewalPatients(locId, fromDate, toDate, search, parseInt(page), parseInt(limit));
   }
 }

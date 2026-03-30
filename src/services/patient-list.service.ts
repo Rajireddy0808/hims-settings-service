@@ -11,11 +11,11 @@ export class PatientListService {
   ) { }
 
   async getAllPatients(
-    locationId?: number, 
-    fromDate?: string, 
-    toDate?: string, 
-    page: number = 1, 
-    limit: number = 10, 
+    locationId?: number,
+    fromDate?: string,
+    toDate?: string,
+    page: number = 1,
+    limit: number = 10,
     search?: string,
     sortField: string = 'created_at',
     sortOrder: 'ASC' | 'DESC' | 'asc' | 'desc' = 'DESC'
@@ -242,7 +242,7 @@ export class PatientListService {
   async getYearlyPatientFlow() {
     try {
       const currentYear = new Date().getFullYear();
-      
+
       const stats = await this.patientRepository.createQueryBuilder('patient')
         .select("EXTRACT(MONTH FROM patient.created_at)", "month")
         .addSelect("COUNT(*)", "count")

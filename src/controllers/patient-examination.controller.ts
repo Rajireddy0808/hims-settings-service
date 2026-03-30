@@ -23,8 +23,12 @@ export class PatientExaminationController {
   }
 
   @Get('due-patients/all')
-  async getDuePatients(@Query('page') page: string = '1', @Query('limit') limit: string = '10') {
-    return this.patientExaminationService.getDuePatients(parseInt(page), parseInt(limit));
+  async getDuePatients(
+    @Query('page') page: string = '1', 
+    @Query('limit') limit: string = '10',
+    @Query('search') search?: string
+  ) {
+    return this.patientExaminationService.getDuePatients(parseInt(page), parseInt(limit), search);
   }
 
   @Get('nr-list/all')
@@ -32,9 +36,10 @@ export class PatientExaminationController {
     @Query('page') page: string = '1', 
     @Query('limit') limit: string = '10',
     @Query('fromDate') fromDate?: string,
-    @Query('toDate') toDate?: string
+    @Query('toDate') toDate?: string,
+    @Query('search') search?: string
   ) {
-    return this.patientExaminationService.getNRList(parseInt(page), parseInt(limit), fromDate, toDate);
+    return this.patientExaminationService.getNRList(parseInt(page), parseInt(limit), fromDate, toDate, search);
   }
 
   @Get('nr-list/test')

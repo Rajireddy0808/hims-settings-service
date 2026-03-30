@@ -56,6 +56,7 @@ export class AppointmentService {
 
       if (search) {
         whereClause += ` AND (
+          p.patient_id ILIKE $${paramIndex} OR 
           p.first_name ILIKE $${paramIndex} OR 
           p.last_name ILIKE $${paramIndex} OR 
           p.mobile ILIKE $${paramIndex} OR
