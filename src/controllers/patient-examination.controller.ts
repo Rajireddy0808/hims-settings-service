@@ -26,9 +26,15 @@ export class PatientExaminationController {
   async getDuePatients(
     @Query('page') page: string = '1', 
     @Query('limit') limit: string = '10',
-    @Query('search') search?: string
+    @Query('search') search?: string,
+    @Query('location_id') locationId?: string
   ) {
-    return this.patientExaminationService.getDuePatients(parseInt(page), parseInt(limit), search);
+    return this.patientExaminationService.getDuePatients(
+      parseInt(page), 
+      parseInt(limit), 
+      search,
+      locationId ? parseInt(locationId) : undefined
+    );
   }
 
   @Get('nr-list/all')
@@ -37,9 +43,17 @@ export class PatientExaminationController {
     @Query('limit') limit: string = '10',
     @Query('fromDate') fromDate?: string,
     @Query('toDate') toDate?: string,
-    @Query('search') search?: string
+    @Query('search') search?: string,
+    @Query('location_id') locationId?: string
   ) {
-    return this.patientExaminationService.getNRList(parseInt(page), parseInt(limit), fromDate, toDate, search);
+    return this.patientExaminationService.getNRList(
+      parseInt(page), 
+      parseInt(limit), 
+      fromDate, 
+      toDate, 
+      search,
+      locationId ? parseInt(locationId) : undefined
+    );
   }
 
   @Get('nr-list/test')

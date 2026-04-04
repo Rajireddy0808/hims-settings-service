@@ -19,9 +19,7 @@ export class DatabaseConfig implements TypeOrmOptionsFactory {
       logging: true,
       retryAttempts: 3,
       retryDelay: 3000,
-      ssl: process.env.DB_HOST === '127.0.0.1' || process.env.DB_HOST === 'localhost' ? false : {
-        rejectUnauthorized: false,
-      },
+      ssl: { rejectUnauthorized: false },
       extra: {
         connectionTimeoutMillis: 10000,
         query_timeout: 10000,

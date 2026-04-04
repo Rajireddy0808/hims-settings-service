@@ -68,10 +68,25 @@ export class CashCollectionsService {
       paramIndex++;
     }
 
-    const [collections, expenses] = await Promise.all([
+    const [installments, patientRegFees, expenses] = await Promise.all([
       query.getRawMany(),
+      this.paymentInstallmentRepository.query(`
+        SELECT 
+          id,
+          DATE(created_at) as date,
+          amount,
+          'Registration Fee' as payment_method,
+          'credit' as transaction_type
+        FROM patients
+        WHERE LOWER(fee_type) = 'cash'
+        ${locationId ? ` AND location_id = ${locationId}` : ''}
+        ${fromDate ? ` AND created_at >= '${fromDate}'` : ''}
+        ${toDate ? ` AND created_at <= '${toDate} 23:59:59.999'` : ''}
+      `),
       this.paymentInstallmentRepository.query(expensesQuery, expenseParams)
     ]);
+
+    const collections = [...installments, ...patientRegFees];
 
     // Group by date
     const groupedByDate = {};

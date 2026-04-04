@@ -34,13 +34,17 @@ export class TodayCollectionsService {
         'pe.patient_id as patientid',
         'pe.createdAt as examinationdate',
         'pe.totalAmount as totalamount',
-        'pi.id as installmentid',
-        'pi.amount as installmentamount',
-        'pi.paymentDate as paymentdate',
-        'pi.paymentMethod as paymentmethod',
+        'string_agg(pi.amount::text, \', \') as installmentamount',
+        'sum(pi.amount) as total_installment_amount',
+        'MAX(pi.paymentDate) as paymentdate',
+        'string_agg(pi.paymentMethod, \', \') as paymentmethod',
         'p.first_name as firstname',
         'p.last_name as lastname',
-        'p.patient_id as custompatientid'
+        'p.patient_id as custompatientid',
+        'p.fee as patient_fee',
+        'p.fee_type as patient_fee_type',
+        'p.amount as patient_amount',
+        'pe.locationId as locationid'
       ])
       .where('pi.paymentDate >= :startOfDay', { startOfDay })
       .andWhere('pi.paymentDate <= :endOfDay', { endOfDay });
@@ -49,7 +53,8 @@ export class TodayCollectionsService {
       query.andWhere('pe.locationId = :locationId', { locationId });
     }
 
-    query.orderBy('pi.paymentDate', 'DESC');
+    query.groupBy('pe.id, pe.patient_id, pe.createdAt, pe.totalAmount, p.id, p.first_name, p.last_name, p.patient_id, p.fee, p.fee_type, p.amount, pe.locationId');
+    query.orderBy('MAX(pi.paymentDate)', 'DESC');
 
     return query.getRawMany();
   }

@@ -18,9 +18,10 @@ export class PatientListService {
     limit: number = 10,
     search?: string,
     sortField: string = 'created_at',
-    sortOrder: 'ASC' | 'DESC' | 'asc' | 'desc' = 'DESC'
+    sortOrder: 'ASC' | 'DESC' | 'asc' | 'desc' = 'DESC',
+    status: string = 'active'
   ) {
-    console.log('Filters:', { fromDate, toDate, locationId, search, sortField, sortOrder }); // Debug log
+    console.log('Filters:', { fromDate, toDate, locationId, search, sortField, sortOrder, status }); // Debug log
 
     const queryBuilder = this.patientRepository.createQueryBuilder('patient')
       .leftJoin(qb => {
@@ -55,34 +56,30 @@ export class PatientListService {
         'loc.name as location_name'
       ]);
 
+    // Base condition to make subsequent filter logic cleaner
+    queryBuilder.where('1=1');
+
     // Only filter by location if locationId is provided and not 0
     if (locationId && locationId !== 0) {
-      queryBuilder.where('patient.location_id = :locationId', { locationId });
+      queryBuilder.andWhere('patient.location_id = :locationId', { locationId });
+    }
+
+    // Filter by status if provided
+    if (status && status !== 'all') {
+      queryBuilder.andWhere('patient.status = :status', { status });
     }
 
     if (search) {
       const searchCondition = '(patient.patient_id LIKE :search OR patient.first_name ILIKE :search OR patient.last_name ILIKE :search OR (patient.first_name || \' \' || patient.last_name) ILIKE :search OR patient.mobile LIKE :search)';
-      if (locationId && locationId !== 0) {
-        queryBuilder.andWhere(searchCondition, { search: `%${search}%` });
-      } else {
-        queryBuilder.where(searchCondition, { search: `%${search}%` });
-      }
+      queryBuilder.andWhere(searchCondition, { search: `%${search}%` });
     }
 
     if (fromDate) {
-      if (locationId && locationId !== 0 || search) {
-        queryBuilder.andWhere('DATE(patient.created_at) >= :fromDate', { fromDate });
-      } else {
-        queryBuilder.where('DATE(patient.created_at) >= :fromDate', { fromDate });
-      }
+      queryBuilder.andWhere('DATE(patient.created_at) >= :fromDate', { fromDate });
     }
 
     if (toDate) {
-      if (locationId && locationId !== 0 || search || fromDate) {
-        queryBuilder.andWhere('DATE(patient.created_at) <= :toDate', { toDate });
-      } else {
-        queryBuilder.where('DATE(patient.created_at) <= :toDate', { toDate });
-      }
+      queryBuilder.andWhere('DATE(patient.created_at) <= :toDate', { toDate });
     }
 
     // Mapping frontend fields to DB columns for sorting

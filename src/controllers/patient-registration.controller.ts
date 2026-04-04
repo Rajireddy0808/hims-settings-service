@@ -83,7 +83,8 @@ export class PatientRegistrationController {
       limitNum, 
       search, 
       sortField, 
-      sortOrder
+      sortOrder,
+      req.query.status as string || 'active'
     );
   }
 

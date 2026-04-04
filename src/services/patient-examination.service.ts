@@ -359,10 +359,13 @@ export class PatientExaminationService {
     return { message: 'NR List updated successfully', affectedRows: result[1] };
   }
 
-  async getDuePatients(page: number = 1, limit: number = 10, search?: string): Promise<any> {
+  async getDuePatients(page: number = 1, limit: number = 10, search?: string, locationId?: number): Promise<any> {
     const offset = (page - 1) * limit;
     
-    const baseFilter = `pe.due_amount != 0`;
+    let baseFilter = `pe.due_amount != 0`;
+    if (locationId) {
+      baseFilter += ` AND p.location_id = ${locationId}`;
+    }
     
     // Build parameters and filter for count query (indexed from $1)
     let countFilter = baseFilter;
@@ -437,10 +440,10 @@ export class PatientExaminationService {
     };
   }
 
-  async getNRList(page: number = 1, limit: number = 10, fromDate?: string, toDate?: string, search?: string): Promise<any> {
+  async getNRList(page: number = 1, limit: number = 10, fromDate?: string, toDate?: string, search?: string, locationId?: number): Promise<any> {
     const offset = (page - 1) * limit;
     
-    const baseFilter = `
+    let baseFilter = `
       pe.treatment_plan_months_pro IS NULL
       AND pe.next_renewal_date_pro IS NULL
       AND pe.total_amount = 0
@@ -448,6 +451,9 @@ export class PatientExaminationService {
       AND pe.paid_amount = 0
       AND pe.due_amount = 0
     `;
+    if (locationId) {
+      baseFilter += ` AND p.location_id = ${locationId}`;
+    }
     
     // Build parameters and filter for count query (indexed from $1)
     let countFilter = baseFilter;

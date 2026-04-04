@@ -111,29 +111,30 @@ export class PatientRegistrationService {
       salutation, firstName, middleName, lastName, fatherSpouseName,
       gender, mobile, email, dateOfBirth, bloodGroup, maritalStatus,
       address1, district, state, country, pinCode, emergencyContact,
-      medicalHistory, medicalConditions, password
+      medicalHistory, medicalConditions, password, status
     } = patientData;
 
-    // Update patient fields
-    patient.salutation = salutation || patient.salutation;
-    patient.first_name = firstName || patient.first_name;
-    patient.middle_name = middleName;
-    patient.last_name = lastName || patient.last_name;
-    patient.father_spouse_name = fatherSpouseName;
-    patient.gender = gender?.toLowerCase() || patient.gender;
-    patient.mobile = mobile || patient.mobile;
-    patient.email = email;
-    patient.date_of_birth = dateOfBirth || patient.date_of_birth;
-    patient.blood_group = bloodGroup;
-    patient.marital_status = maritalStatus;
-    patient.address1 = address1 || patient.address1;
-    patient.district = district || patient.district;
-    patient.state = state || patient.state;
-    patient.country = country || patient.country;
-    patient.pin_code = pinCode;
-    patient.emergency_contact = emergencyContact;
-    patient.medical_history = medicalHistory;
-    patient.medical_conditions = medicalConditions;
+    // Update patient fields if provided
+    if (salutation) patient.salutation = salutation;
+    if (firstName) patient.first_name = firstName;
+    if (middleName !== undefined) patient.middle_name = middleName;
+    if (lastName) patient.last_name = lastName;
+    if (fatherSpouseName !== undefined) patient.father_spouse_name = fatherSpouseName;
+    if (gender) patient.gender = gender.toLowerCase();
+    if (mobile) patient.mobile = mobile;
+    if (email !== undefined) patient.email = email;
+    if (dateOfBirth) patient.date_of_birth = dateOfBirth;
+    if (bloodGroup !== undefined) patient.blood_group = bloodGroup;
+    if (maritalStatus !== undefined) patient.marital_status = maritalStatus;
+    if (address1) patient.address1 = address1;
+    if (district) patient.district = district;
+    if (state) patient.state = state;
+    if (country) patient.country = country;
+    if (pinCode !== undefined) patient.pin_code = pinCode;
+    if (emergencyContact !== undefined) patient.emergency_contact = emergencyContact;
+    if (medicalHistory !== undefined) patient.medical_history = medicalHistory;
+    if (medicalConditions !== undefined) patient.medical_conditions = medicalConditions;
+    if (status) patient.status = status;
 
     if (password) {
       patient.password = crypto.createHash('md5').update(password).digest('hex');

@@ -300,6 +300,7 @@ export class AuthService {
             email: user.email,
             role_id: userRoleId,
             role_name: userRoleName,
+            is_admin: isSuperAdmin,
             department_id: userDepartmentId,
             primary_location_id: user.primaryLocationId,
             location_id: userLocationIds,
