@@ -167,6 +167,14 @@ import { MobileRechargeController } from './controllers/mobile-recharge.controll
 import { MedicineDaysController } from './controllers/medicine-days.controller';
 import { MedicineDaysService } from './services/medicine-days.service';
 import { MedicineDays } from './entities/medicine-days.entity';
+import { Treatment } from './entities/treatment.entity';
+import { TreatmentsService } from './services/treatments.service';
+import { TreatmentsController } from './controllers/treatments.controller';
+import { PublicTreatmentsController } from './controllers/treatments-public.controller';
+import { Blog } from './entities/blog.entity';
+import { BlogsService } from './services/blogs.service';
+import { BlogsController } from './controllers/blogs.controller';
+import { PublicBlogsController } from './controllers/blogs-public.controller';
 import { WhatsappModule } from './modules/whatsapp/whatsapp.module';
 
 
@@ -227,6 +235,8 @@ import { WhatsappModule } from './modules/whatsapp/whatsapp.module';
       MobileSimMaster,
       MobileRechargePlan,
       MedicineDays,
+      Treatment,
+      Blog,
     ]),
   ],
   controllers: [
@@ -290,6 +300,10 @@ import { WhatsappModule } from './modules/whatsapp/whatsapp.module';
     HRPoliciesController,
     MobileRechargeController,
     MedicineDaysController,
+    TreatmentsController,
+    PublicTreatmentsController,
+    BlogsController,
+    PublicBlogsController,
   ],
   providers: [
     AuthService,
@@ -348,6 +362,8 @@ import { WhatsappModule } from './modules/whatsapp/whatsapp.module';
     HRPoliciesService,
     MobileRechargeService,
     MedicineDaysService,
+    TreatmentsService,
+    BlogsService,
   ],
 })
 export class AppModule { }
