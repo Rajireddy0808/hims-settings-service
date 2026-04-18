@@ -21,8 +21,8 @@ export class DatabaseConfig implements TypeOrmOptionsFactory {
       retryDelay: 3000,
       ssl: { rejectUnauthorized: false },
       extra: {
-        connectionTimeoutMillis: 10000,
-        query_timeout: 10000,
+        connectionTimeoutMillis: 60000,
+        query_timeout: 60000,
       },
     };
   }

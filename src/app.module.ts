@@ -175,9 +175,36 @@ import { Blog } from './entities/blog.entity';
 import { BlogsService } from './services/blogs.service';
 import { BlogsController } from './controllers/blogs.controller';
 import { PublicBlogsController } from './controllers/blogs-public.controller';
+import { Enquiry } from './entities/enquiry.entity';
+import { EnquiryService } from './services/enquiry.service';
+import { EnquiryController } from './controllers/enquiry.controller';
 import { WhatsappModule } from './modules/whatsapp/whatsapp.module';
+import { AboutContent } from './entities/about-content.entity';
+import { AboutService } from './services/about.service';
+import { AboutController } from './controllers/about.controller';
+import { PublicAboutController } from './controllers/about-public.controller';
+import { Branch } from './entities/branch.entity';
+import { BranchesService } from './services/branches.service';
+import { BranchesController } from './controllers/branches.controller';
+import { BranchesPublicController } from './controllers/branches-public.controller';
+import { HeroSection } from './entities/hero-section.entity';
+import { HeroSectionService } from './services/hero-section.service';
+import { HeroSectionController } from './controllers/hero-section.controller';
+import { HeroSectionPublicController } from './controllers/hero-section-public.controller';
+import { ReviewsExternalService } from './services/reviews-external.service';
+import { ReviewsPublicController } from './controllers/reviews-public.controller';
+import { GoogleReview } from './entities/google-review.entity';
+import { GoogleReviewsService } from './services/google-reviews.service';
+import { GoogleReviewsPublicController } from './controllers/google-reviews-public.controller';
+import { GoogleReviewsAdminController } from './controllers/google-reviews-admin.controller';
+import { ChatSession } from './entities/chat-session.entity';
+import { ChatMessage } from './entities/chat-message.entity';
+import { ChatService } from './services/chat.service';
+import { ChatController } from './controllers/chat.controller';
+import { ChatGateway } from './gateways/chat.gateway';
 
 
+// Branches system added 2026-04-08
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -237,6 +264,13 @@ import { WhatsappModule } from './modules/whatsapp/whatsapp.module';
       MedicineDays,
       Treatment,
       Blog,
+      Enquiry,
+      AboutContent,
+      Branch,
+      HeroSection,
+      GoogleReview,
+      ChatSession,
+      ChatMessage,
     ]),
   ],
   controllers: [
@@ -304,6 +338,17 @@ import { WhatsappModule } from './modules/whatsapp/whatsapp.module';
     PublicTreatmentsController,
     BlogsController,
     PublicBlogsController,
+    EnquiryController,
+    AboutController,
+    PublicAboutController,
+    BranchesController,
+    BranchesPublicController,
+    HeroSectionController,
+    HeroSectionPublicController,
+    ReviewsPublicController,
+    GoogleReviewsPublicController,
+    GoogleReviewsAdminController,
+    ChatController,
   ],
   providers: [
     AuthService,
@@ -364,6 +409,14 @@ import { WhatsappModule } from './modules/whatsapp/whatsapp.module';
     MedicineDaysService,
     TreatmentsService,
     BlogsService,
+    EnquiryService,
+    AboutService,
+    BranchesService,
+    HeroSectionService,
+    ReviewsExternalService,
+    GoogleReviewsService,
+    ChatService,
+    ChatGateway,
   ],
 })
 export class AppModule { }

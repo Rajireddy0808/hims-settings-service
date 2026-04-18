@@ -1,16 +1,68 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
+import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Treatment } from '../entities/treatment.entity';
 
 @Injectable()
-export class TreatmentsService {
+export class TreatmentsService implements OnModuleInit {
   constructor(
     @InjectRepository(Treatment)
     private readonly treatmentRepository: Repository<Treatment>,
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
   ) {}
 
+  async onModuleInit() {
+    console.log('[Treatments] 🚀 Initializing Treatment Service...');
+    try {
+      await this.fixDb();
+      await this.seed();
+    } catch (err) {
+      console.error('[Treatments] Error during initialization:', err);
+    }
+  }
+
+  async fixDb(): Promise<string> {
+    const results = [];
+    try {
+      // Step 1: Add column
+      try {
+        await this.dataSource.query('ALTER TABLE "treatments" ADD COLUMN IF NOT EXISTS "slug" VARCHAR(255) UNIQUE');
+        results.push('Column "slug" ensured in "treatments" table.');
+      } catch (err) {
+        results.push(`Error adding column: ${err.message}`);
+      }
+
+      // Step 2: Populate slugs
+      try {
+        await this.dataSource.query(`
+          UPDATE "treatments" 
+          SET "slug" = LOWER(REGEXP_REPLACE(name, '[^a-zA-Z0-9]+', '-', 'g'))
+          WHERE "slug" IS NULL
+        `);
+        results.push('Slugs populated for existing treatments.');
+      } catch (err) {
+        results.push(`Error populating slugs: ${err.message}`);
+      }
+
+      return results.join(' | ');
+    } catch (error) {
+      console.error('Critical error in fixDb:', error);
+      return `Critical failure: ${error.message}`;
+    }
+  }
+
+  private generateSlug(name: string): string {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)+/g, '');
+  }
+
   async create(createTreatmentDto: any): Promise<Treatment> {
+    if (!createTreatmentDto.slug && createTreatmentDto.name) {
+      createTreatmentDto.slug = this.generateSlug(createTreatmentDto.name);
+    }
     const treatment = this.treatmentRepository.create(createTreatmentDto);
     return this.treatmentRepository.save(treatment) as any;
   }
@@ -20,6 +72,7 @@ export class TreatmentsService {
   }
 
   async findAllActive(): Promise<Treatment[]> {
+    await this.fixDb();
     return this.treatmentRepository.find({
       where: { status: 'active' },
       order: { name: 'ASC' },
@@ -34,8 +87,20 @@ export class TreatmentsService {
     return treatment;
   }
 
+  async findOneBySlug(slug: string): Promise<Treatment> {
+    await this.fixDb();
+    const treatment = await this.treatmentRepository.findOne({ where: { slug, status: 'active' } });
+    if (!treatment) {
+      throw new NotFoundException(`Treatment with slug ${slug} not found`);
+    }
+    return treatment;
+  }
+
   async update(id: number, updateTreatmentDto: any): Promise<Treatment> {
     await this.findOne(id);
+    if (updateTreatmentDto.name && !updateTreatmentDto.slug) {
+      updateTreatmentDto.slug = this.generateSlug(updateTreatmentDto.name);
+    }
     await this.treatmentRepository.update(id, updateTreatmentDto);
     return this.findOne(id);
   }
@@ -114,16 +179,45 @@ export class TreatmentsService {
       {
         name: "PCOS / PCOD",
         category: "Women's Health",
+        slug: "pcos",
         short_description: "Specialized treatment for PCOS naturally, restoring hormonal balance and improving overall well-being.",
         long_description: "Empowering women's health through natural restoration. Our PCOS treatment focuses on regularizing cycles.",
         image_url: "https://images.unsplash.com/photo-1594824476967-48c8b964273f?q=80&w=2574&auto=format&fit=crop",
         status: "active",
-        sections: [],
-        faqs: []
+        sections: [
+          {
+            title: "PCOS Symptoms",
+            type: "list",
+            content: "Irregular periods,Excessive hair growth (hirsutism),Severe acne,Weight gain,Thinning hair"
+          },
+          {
+            title: "PCOS Causes",
+            type: "text",
+            content: "Polycystic ovary syndrome (PCOS) is a hormonal disorder common among women of reproductive age. The exact cause of PCOS is unknown, but factors include insulin resistance, excess androgen, and genetics."
+          },
+          {
+            title: "Homeopathic Treatment",
+            type: "text",
+            content: "Homeopathy offers a constitutional approach to treating PCOS. It focuses on identifying and correcting the underlying hormonal imbalances naturally, without side effects."
+          }
+        ],
+        faqs: [
+          {
+            question: "Is PCOS curable with Homeopathy?",
+            answer: "Yes, Homeopathy addresses the root cause of the hormonal imbalance and can effectively manage and often resolve PCOS symptoms permanently."
+          },
+          {
+            question: "Does PCOS return after treatment?",
+            answer: "With consistent treatment and lifestyle modifications recommended by our doctors, the chances of recurrence are significantly minimized."
+          }
+        ]
       }
     ];
 
     for (const data of initialData) {
+      if (!data.slug) {
+        (data as any).slug = this.generateSlug(data.name);
+      }
       await this.treatmentRepository.save(this.treatmentRepository.create(data));
     }
   }

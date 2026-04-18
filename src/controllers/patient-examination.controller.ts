@@ -102,13 +102,18 @@ export class PatientExaminationController {
   }
 
   @Post(':id/add-payment')
-  async addPayment(@Param('id') id: number, @Body() paymentData: { paymentMethod: string; amount: number; notes?: string }) {
+  async addPayment(@Param('id') id: number, @Body() paymentData: { payments: { paymentMethod: string; amount: number }[]; notes?: string }) {
     return this.patientExaminationService.addPayment(id, paymentData);
   }
 
   @Get(':id/installments')
   async getPaymentInstallments(@Param('id') id: number) {
     return this.patientExaminationService.getPaymentInstallments(id);
+  }
+
+  @Get('patient/:patientId/all-installments')
+  async getAllPatientInstallments(@Param('patientId') patientId: number) {
+    return this.patientExaminationService.getAllInstallmentsByPatientId(patientId);
   }
 
   @Get(':id/receipt')

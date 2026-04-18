@@ -1,33 +1,45 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
-@Entity('treatments')
-export class Treatment {
+@Entity('branches')
+export class Branch {
   @PrimaryGeneratedColumn()
   id: number;
 
   @Column({ type: 'varchar', length: 255 })
   name: string;
 
-  @Column({ type: 'text', nullable: true })
-  short_description: string;
+  @Column({ type: 'varchar', length: 255, unique: true, nullable: true })
+  slug: string;
 
-  @Column({ type: 'text', nullable: true })
-  long_description: string;
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  address: string;
 
   @Column({ type: 'varchar', length: 100, nullable: true })
-  category: string;
+  phone: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  email: string;
+
+  @Column({ type: 'text', nullable: true })
+  description: string;
+
+  @Column({ type: 'text', nullable: true })
+  map_url: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   image_url: string;
 
   @Column({ type: 'json', nullable: true })
-  sections: any;
+  gallery: string[];
 
   @Column({ type: 'json', nullable: true })
-  faqs: any;
+  timings: string;
 
-  @Column({ type: 'varchar', length: 255, unique: true, nullable: true })
-  slug: string;
+  @Column({ type: 'json', nullable: true })
+  landmarks: string[];
+
+  @Column({ type: 'varchar', length: 100, default: 'Andhra Pradesh' })
+  state: string;
 
   @Column({ type: 'varchar', length: 20, default: 'active' })
   status: string;

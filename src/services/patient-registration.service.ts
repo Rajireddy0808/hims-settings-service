@@ -19,7 +19,7 @@ export class PatientRegistrationService {
       salutation, firstName, middleName, lastName, fatherSpouseName,
       gender, mobile, email, dateOfBirth, bloodGroup, maritalStatus,
       address1, district, state, country, pinCode, emergencyContact,
-      medicalHistory, medicalConditions, fee, feeType, source,
+      medicalHistory, medicalConditions, fee, feeType, source, patientSourceId,
       occupation, specialization, doctor, amount, password, refPatientId, employeeRefId
     } = patientData;
 
@@ -75,6 +75,7 @@ export class PatientRegistrationService {
       fee,
       fee_type: feeType,
       source,
+      patient_source_id: patientSourceId,
       occupation,
       specialization,
       doctor,

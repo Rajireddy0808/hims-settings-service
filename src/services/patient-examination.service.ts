@@ -37,7 +37,18 @@ export class PatientExaminationService {
   }
 
   async update(id: number, updateExaminationDto: any): Promise<PatientExamination> {
-    await this.patientExaminationRepository.update(id, updateExaminationDto);
+    if (updateExaminationDto.createdAt) {
+      await this.patientExaminationRepository.query(
+        'UPDATE patient_examination SET created_at = $1 WHERE id = $2',
+        [updateExaminationDto.createdAt, id]
+      );
+      delete updateExaminationDto.createdAt;
+    }
+    
+    if (Object.keys(updateExaminationDto).length > 0) {
+      await this.patientExaminationRepository.update(id, updateExaminationDto);
+    }
+    
     return await this.patientExaminationRepository.findOne({ where: { id } });
   }
 
@@ -90,7 +101,23 @@ export class PatientExaminationService {
     };
   }
 
-
+  async getAllInstallmentsByPatientId(patientId: number): Promise<any[]> {
+    return this.paymentInstallmentRepository.query(`
+      SELECT 
+        pi.id,
+        pi.installment_number as "installmentNumber",
+        pi.payment_method as "paymentMethod",
+        pi.amount,
+        pi.payment_date as "paymentDate",
+        pi.notes,
+        pe.created_at as "examinationDate",
+        pe.id as "examinationId"
+      FROM payment_installments pi
+      JOIN patient_examination pe ON pi.patient_examination_id = pe.id
+      WHERE pe.patient_id = $1
+      ORDER BY pi.payment_date DESC, pi.installment_number DESC
+    `, [patientId]);
+  }
 
   async runFileMigration() {
     try {
@@ -156,7 +183,7 @@ export class PatientExaminationService {
     return { message: 'File deleted successfully', files: updatedFiles };
   }
 
-  async addPayment(examinationId: number, paymentData: { paymentMethod: string; amount: number; notes?: string }): Promise<any> {
+  async addPayment(examinationId: number, paymentData: { payments: { paymentMethod: string; amount: number }[]; notes?: string }): Promise<any> {
     // Use raw query to ensure update works
     const examination = await this.patientExaminationRepository.query(
       'SELECT * FROM patient_examination WHERE id = $1', [examinationId]
@@ -173,20 +200,27 @@ export class PatientExaminationService {
       where: { patientExaminationId: examinationId },
       order: { installmentNumber: 'DESC' }
     });
-    const nextInstallmentNumber = (lastInstallment?.installmentNumber || 0) + 1;
+    let nextInstallmentNumber = (lastInstallment?.installmentNumber || 0) + 1;
 
-    // Add new installment record
-    const newInstallment = await this.paymentInstallmentRepository.save({
-      patientExaminationId: examinationId,
-      installmentNumber: nextInstallmentNumber,
-      paymentMethod: paymentData.paymentMethod,
-      amount: paymentData.amount,
-      notes: paymentData.notes || null
-    });
+    let totalNewPayment = 0;
+    const createdInstallments = [];
+
+    // Add new installment records
+    for (const payment of paymentData.payments) {
+      const newInstallment = await this.paymentInstallmentRepository.save({
+        patientExaminationId: examinationId,
+        installmentNumber: nextInstallmentNumber++,
+        paymentMethod: payment.paymentMethod,
+        amount: payment.amount,
+        notes: paymentData.notes || null
+      });
+      createdInstallments.push(newInstallment);
+      totalNewPayment += parseFloat(payment.amount.toString());
+    }
 
     // Calculate new amounts
     const currentPaidAmount = parseFloat(exam.paid_amount || '0');
-    const newPaidAmount = currentPaidAmount + parseFloat(paymentData.amount.toString());
+    const newPaidAmount = currentPaidAmount + totalNewPayment;
     const totalAmount = parseFloat(exam.total_amount || '0');
     const discountAmount = parseFloat(exam.discount_amount || '0');
     const newDueAmount = Math.max(0, totalAmount - discountAmount - newPaidAmount);
@@ -198,11 +232,9 @@ export class PatientExaminationService {
     );
 
     return {
-      message: 'Payment installment added successfully',
-      installmentId: newInstallment.id,
-      installmentNumber: nextInstallmentNumber,
-      totalAmount: totalAmount,
-      discountAmount: discountAmount,
+      message: 'Payment installments added successfully',
+      installments: createdInstallments,
+      totalNewPayment,
       paidAmount: newPaidAmount,
       dueAmount: newDueAmount
     };

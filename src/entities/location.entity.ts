@@ -28,6 +28,10 @@ export class Location {
   email: string;
 
   @ApiProperty()
+  @Column({ default: 'Andhra Pradesh' })
+  state: string;
+
+  @ApiProperty()
   @Column({ name: 'is_active', default: true })
   isActive: boolean;
 
