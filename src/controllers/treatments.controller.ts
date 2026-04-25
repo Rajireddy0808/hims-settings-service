@@ -60,11 +60,7 @@ export class TreatmentsController {
     return this.treatmentsService.findAll();
   }
 
-  @Post('seed')
-  @ApiOperation({ summary: 'Seed initial treatments data' })
-  seed(): Promise<void> {
-    return this.treatmentsService.seed();
-  }
+
 
   @Get(':id')
   @ApiOperation({ summary: 'Get treatment by ID' })
