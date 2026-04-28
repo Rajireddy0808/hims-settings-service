@@ -80,7 +80,7 @@ export class AboutService implements OnModuleInit {
     if (count === 0) {
       const initialAbout = {
         title: "The Natural science\nWHAT IS HOMEOPATHY?",
-        description: "Homeopathy is an alternative healthcare system acknowledged by many global health communities. It originated in Germany and is now widely practiced and respected in India. Homeopathy offers safe, natural treatment for many chronic conditions, with virtually no side effects. It works by strengthening the body's immune system and helping to develop resilience to fight long-term health issues.\n\nUni Care Group has 4 branches and over 30 qualified doctors. We follow an evidence-based homeopathic practice that considers both mental and physical health. Our treatments are cost-effective, provide rapid relief, and are centered around patient care.",
+        description: "Homeopathy is an alternative healthcare system acknowledged by many global health communities. It originated in Germany and is now widely practiced and respected in India. Homeopathy offers safe, natural treatment for many chronic conditions, with virtually no side effects. It works by strengthening the body's immune system and helping to develop resilience to fight long-term health issues.\n\nUniCare Group has 4 branches and over 30 qualified doctors. We follow an evidence-based homeopathic practice that considers both mental and physical health. Our treatments are cost-effective, provide rapid relief, and are centered around patient care.",
         status: "active",
         image_urls: []
       };
