@@ -8,7 +8,7 @@ export class GoogleReviewsService {
   constructor(
     @InjectRepository(GoogleReview)
     private readonly repo: Repository<GoogleReview>,
-  ) {}
+  ) { }
 
   // ── Public: Returns active reviews grouped by branch for the website ──────────
   async getActiveReviewsByBranch(): Promise<Record<string, any[]>> {
@@ -17,23 +17,20 @@ export class GoogleReviewsService {
       order: { branch_name: 'ASC', createdAt: 'DESC' },
     });
 
-    const grouped: Record<string, any[]> = {
-      Miryalaguda: [],
-      Narasaraopet: [],
-      Ongole: [],
-    };
-
+    const grouped: Record<string, any[]> = {};
+    
     for (const r of reviews) {
-      if (grouped[r.branch_name] !== undefined) {
-        grouped[r.branch_name].push({
-          name: r.reviewer_name,
-          stats: r.reviewer_stats || 'Verified Reviewer',
-          date: r.review_date || 'recently',
-          text: r.review_text,
-          rating: r.rating,
-          source: 'Google',
-        });
+      if (!grouped[r.branch_name]) {
+        grouped[r.branch_name] = [];
       }
+      grouped[r.branch_name].push({
+        name: r.reviewer_name,
+        stats: r.reviewer_stats || 'Verified Reviewer',
+        date: r.review_date || 'recently',
+        text: r.review_text,
+        rating: r.rating,
+        source: 'Google',
+      });
     }
 
     return grouped;
