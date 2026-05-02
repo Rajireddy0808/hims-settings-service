@@ -202,6 +202,8 @@ import { ChatMessage } from './entities/chat-message.entity';
 import { ChatService } from './services/chat.service';
 import { ChatController } from './controllers/chat.controller';
 import { ChatGateway } from './gateways/chat.gateway';
+import { JobsModule } from './modules/jobs.module';
+import { JobApplicationsModule } from './modules/job-applications.module';
 
 
 // Branches system added 2026-04-08
@@ -218,6 +220,8 @@ import { ChatGateway } from './gateways/chat.gateway';
     }),
     ConsultationModule,
     WhatsappModule,
+    JobsModule,
+    JobApplicationsModule,
     TypeOrmModule.forFeature([
       User,
       UserInfo,
@@ -419,4 +423,8 @@ import { ChatGateway } from './gateways/chat.gateway';
     ChatGateway,
   ],
 })
-export class AppModule { }
+export class AppModule { 
+  constructor() {
+    console.log('🚀 AppModule Initialized - Jobs and Applications Registered');
+  }
+}

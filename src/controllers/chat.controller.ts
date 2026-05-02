@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, UseGuards, ParseIntPipe } from '@nestjs/common';
 import { ChatService } from '../services/chat.service';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
@@ -17,6 +17,12 @@ export class ChatController {
   @Get('sessions')
   async getActiveSessions() {
     return this.chatService.getAllActiveSessions();
+  }
+
+  @ApiOperation({ summary: 'Mark session as read' })
+  @Patch('sessions/:id/read')
+  async markAsRead(@Param('id', ParseIntPipe) id: number) {
+    return this.chatService.markAsRead(id);
   }
 
   @ApiOperation({ summary: 'Update visitor information' })

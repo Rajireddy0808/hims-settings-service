@@ -18,6 +18,9 @@ export class ChatSession {
   @Column({ default: 'active' })
   status: string; // active, closed
 
+  @Column({ default: true })
+  isRead: boolean;
+
   @OneToMany(() => ChatMessage, (message) => message.session)
   messages: ChatMessage[];
 

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, UseInterceptors, UploadedFile, Query } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -12,7 +12,7 @@ import { extname } from 'path';
 @UseGuards(JwtAuthGuard)
 @Controller('settings/treatments')
 export class TreatmentsController {
-  constructor(private readonly treatmentsService: TreatmentsService) {}
+  constructor(private readonly treatmentsService: TreatmentsService) { }
 
   @Post('upload-image')
   @UseInterceptors(FileInterceptor('image', {
@@ -56,11 +56,21 @@ export class TreatmentsController {
   @Get()
   @ApiOperation({ summary: 'Get all treatments' })
   @ApiResponse({ status: 200, type: [Treatment] })
-  findAll(): Promise<Treatment[]> {
-    return this.treatmentsService.findAll();
+  findAll(
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('search') search?: string,
+  ) {
+    return this.treatmentsService.findAll({
+      page,
+      limit,
+      startDate,
+      endDate,
+      search,
+    });
   }
-
-
 
   @Get(':id')
   @ApiOperation({ summary: 'Get treatment by ID' })

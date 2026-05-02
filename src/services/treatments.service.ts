@@ -10,13 +10,12 @@ export class TreatmentsService implements OnModuleInit {
     private readonly treatmentRepository: Repository<Treatment>,
     @InjectDataSource()
     private readonly dataSource: DataSource,
-  ) {}
+  ) { }
 
   async onModuleInit() {
     console.log('[Treatments] 🚀 Initializing Treatment Service...');
     try {
       await this.fixDb();
-
     } catch (err) {
       console.error('[Treatments] Error during initialization:', err);
     }
@@ -25,7 +24,6 @@ export class TreatmentsService implements OnModuleInit {
   async fixDb(): Promise<string> {
     const results = [];
     try {
-      // Step 1: Add column
       try {
         await this.dataSource.query('ALTER TABLE "treatments" ADD COLUMN IF NOT EXISTS "slug" VARCHAR(255) UNIQUE');
         results.push('Column "slug" ensured in "treatments" table.');
@@ -33,7 +31,6 @@ export class TreatmentsService implements OnModuleInit {
         results.push(`Error adding column: ${err.message}`);
       }
 
-      // Step 2: Populate slugs
       try {
         await this.dataSource.query(`
           UPDATE "treatments" 
@@ -67,12 +64,53 @@ export class TreatmentsService implements OnModuleInit {
     return this.treatmentRepository.save(treatment) as any;
   }
 
-  async findAll(): Promise<Treatment[]> {
-    return this.treatmentRepository.find({ order: { name: 'ASC' } });
+  async findAll(query: {
+    page?: number;
+    limit?: number;
+    startDate?: string;
+    endDate?: string;
+    search?: string;
+  } = {}): Promise<{ items: Treatment[]; total: number } | Treatment[]> {
+    const { page, limit, startDate, endDate, search } = query;
+    
+    // If no pagination/search parameters, return all for backward compatibility
+    if (!page && !limit && !startDate && !endDate && !search) {
+      return this.treatmentRepository.find({ order: { name: 'ASC' } });
+    }
+
+    const currentPage = page ? Number(page) : 1;
+    const currentLimit = limit ? Number(limit) : 10;
+    const skip = (currentPage - 1) * currentLimit;
+
+    const queryBuilder = this.treatmentRepository.createQueryBuilder('treatment')
+      .orderBy('treatment.createdAt', 'DESC')
+      .skip(skip)
+      .take(currentLimit);
+
+    if (startDate && endDate) {
+      queryBuilder.andWhere('treatment.createdAt BETWEEN :startDate AND :endDate', { 
+        startDate: new Date(startDate), 
+        endDate: new Date(endDate) 
+      });
+    } else if (startDate) {
+      queryBuilder.andWhere('treatment.createdAt >= :startDate', { startDate: new Date(startDate) });
+    } else if (endDate) {
+      queryBuilder.andWhere('treatment.createdAt <= :endDate', { endDate: new Date(endDate) });
+    }
+
+    if (search) {
+      queryBuilder.andWhere(
+        '(treatment.name ILIKE :search OR treatment.category ILIKE :search)',
+        { search: `%${search}%` }
+      );
+    }
+
+    const [items, total] = await queryBuilder.getManyAndCount();
+
+    return { items, total };
   }
 
   async findAllActive(): Promise<Treatment[]> {
-    await this.fixDb();
     return this.treatmentRepository.find({
       where: { status: 'active' },
       order: { name: 'ASC' },
@@ -88,9 +126,8 @@ export class TreatmentsService implements OnModuleInit {
   }
 
   async findOneBySlug(slug: string): Promise<Treatment> {
-    await this.fixDb();
     const treatment = await this.treatmentRepository.findOne({ where: { slug, status: 'active' } });
-    
+
     if (!treatment && /^\d+$/.test(slug)) {
       const idTreatment = await this.treatmentRepository.findOne({ where: { id: parseInt(slug), status: 'active' } });
       if (idTreatment) return idTreatment;
@@ -115,6 +152,4 @@ export class TreatmentsService implements OnModuleInit {
     const treatment = await this.findOne(id);
     await this.treatmentRepository.remove(treatment);
   }
-
-
 }

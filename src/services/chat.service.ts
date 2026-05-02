@@ -41,7 +41,16 @@ export class ChatService {
       content,
     });
 
+    if (senderType === 'visitor') {
+      session.isRead = false;
+      await this.sessionRepository.save(session);
+    }
+
     return this.messageRepository.save(message);
+  }
+
+  async markAsRead(sessionId: number) {
+    return this.sessionRepository.update(sessionId, { isRead: true });
   }
 
   async getSessionHistory(guestId: string) {
@@ -59,8 +68,18 @@ export class ChatService {
   }
 
   async getAllActiveSessions() {
+    // Auto-delete chats older than 2 days
+    const twoDaysAgo = new Date();
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+
+    await this.sessionRepository
+      .createQueryBuilder()
+      .delete()
+      .from(ChatSession)
+      .where('updated_at < :date', { date: twoDaysAgo })
+      .execute();
+
     return this.sessionRepository.find({
-      where: { status: 'active' },
       relations: ['messages'],
       order: {
         updatedAt: 'DESC',
